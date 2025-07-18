@@ -71,6 +71,71 @@
         </div>
       </div>
       
+      <!-- Contrast Analysis Results -->
+      <div v-if="contrastAnalysis.length > 0" class="contrast-analysis-section">
+        <h4>📊 Análisis de Contraste</h4>
+        <div class="contrast-results">
+          <div 
+            v-for="(result, index) in contrastAnalysis" 
+            :key="index"
+            class="contrast-item"
+          >
+            <div class="contrast-pair">
+              <div class="contrast-info">
+                <div class="color-labels">
+                  <span class="contrast-label">
+                    <span class="label-icon">🎨</span>
+                    Fondo: 
+                    <span class="color-code">
+                      {{ result.background }}
+                      <div 
+                        class="color-sample background-sample" 
+                        :style="{ backgroundColor: result.background }"
+                        :title="`Fondo: ${result.background}`"
+                      ></div>
+                    </span>
+                  </span>
+                  <span class="contrast-label">
+                    <span class="label-icon">✏️</span>
+                    Texto: 
+                    <span class="color-code">
+                      {{ result.text }}
+                      <div 
+                        class="color-sample text-sample" 
+                        :style="{ backgroundColor: result.text }"
+                        :title="`Texto: ${result.text}`"
+                      ></div>
+                    </span>
+                  </span>
+                </div>
+                <div class="contrast-metrics">
+                  <span class="contrast-ratio">
+                    <span class="ratio-icon">📊</span>
+                    Ratio: {{ result.ratio.toFixed(2) }}
+                  </span>
+                  <span 
+                    class="contrast-status"
+                    :class="{ 'pass': result.passes, 'fail': !result.passes }"
+                  >
+                    <span class="status-icon">{{ result.passes ? '✅' : '❌' }}</span>
+                    {{ result.passes ? 'Pasa' : 'Falla' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="contrast-actions">
+          <button @click="applyContrastImprovements" class="contrast-btn improve">
+            🔧 Mejorar Contraste
+          </button>
+          <button @click="restoreDefaultContrast" class="contrast-btn restore">
+            🔄 Restaurar Contraste
+          </button>
+        </div>
+      </div>
+      
       <!-- Export options -->
       <div class="export-section">
         <h4>Exportar Paleta</h4>
@@ -106,6 +171,14 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { 
+  getOptimalTextColor, 
+  applyContrastToElement, 
+  applyContrastToElements,
+  checkWCAGCompliance,
+  calculateContrastRatio,
+  rgbToHex
+} from '../utils/contrastUtils.js'
 
 // Reactive data
 const selectedImage = ref(null)
@@ -114,6 +187,7 @@ const palette = ref([])
 const generatedCode = ref('')
 const copied = ref(false)
 const fileInput = ref(null)
+const contrastAnalysis = ref([])
 
 // Methods
 const triggerFileInput = () => {
@@ -148,6 +222,174 @@ const clearImage = () => {
   palette.value = []
   generatedCode.value = ''
   copied.value = false
+  contrastAnalysis.value = []
+}
+
+// Función para analizar contraste de la paleta
+function analyzePaletteContrast() {
+  const analysis = [];
+  
+  // Analizar cada color de la paleta contra texto blanco y negro
+  palette.value.forEach((color, index) => {
+    const background = color.hex;
+    
+    // Validar que el color tenga el formato correcto
+    if (!background || typeof background !== 'string' || !background.startsWith('#')) {
+      console.warn('Invalid color format in palette:', background);
+      return; // Saltar este color
+    }
+    
+    // Test con texto blanco
+    const whiteText = '#ffffff';
+    const whiteRatio = calculateContrastRatio(whiteText, background);
+    const whiteCompliance = checkWCAGCompliance(whiteText, background);
+    
+    analysis.push({
+      background,
+      text: whiteText,
+      ratio: whiteRatio,
+      passes: whiteCompliance.passes,
+      type: 'white-text'
+    });
+    
+    // Test con texto negro
+    const blackText = '#000000';
+    const blackRatio = calculateContrastRatio(blackText, background);
+    const blackCompliance = checkWCAGCompliance(blackText, background);
+    
+    analysis.push({
+      background,
+      text: blackText,
+      ratio: blackRatio,
+      passes: blackCompliance.passes,
+      type: 'black-text'
+    });
+  });
+  
+  contrastAnalysis.value = analysis;
+}
+
+// Función para aplicar mejoras de contraste
+function applyContrastImprovements() {
+  console.log('Aplicando mejoras de contraste...');
+  
+  // Aplicar contraste a elementos visibles actualmente
+  applyContrastToVisibleElements();
+}
+
+// Función para aplicar contraste a elementos visibles
+function applyContrastToVisibleElements() {
+  // 1. Botones de modo (siempre visibles)
+  const modeButtons = document.querySelectorAll('.mode-btn');
+  modeButtons.forEach(button => {
+    const backgroundColor = rgbToHex(getComputedStyle(button).backgroundColor);
+    const contrastColor = getContrastColor(backgroundColor);
+    button.style.color = contrastColor;
+    console.log('Aplicado contraste a botón:', button.textContent, 'Color:', contrastColor);
+  });
+  
+  // 2. Header principal
+  const header = document.querySelector('.analyzer-header');
+  if (header) {
+    const headerBg = rgbToHex(getComputedStyle(header).backgroundColor);
+    const headerText = header.querySelector('h2');
+    const headerDesc = header.querySelector('p');
+    
+    if (headerText) {
+      const contrastColor = getContrastColor(headerBg);
+      headerText.style.color = contrastColor;
+      console.log('Aplicado contraste a header h2:', contrastColor);
+    }
+    
+    if (headerDesc) {
+      const contrastColor = getContrastColor(headerBg);
+      headerDesc.style.color = contrastColor;
+      console.log('Aplicado contraste a header p:', contrastColor);
+    }
+  }
+  
+  // 3. Botones de contraste (si están visibles)
+  const contrastButtons = document.querySelectorAll('.contrast-btn');
+  contrastButtons.forEach(button => {
+    const backgroundColor = rgbToHex(getComputedStyle(button).backgroundColor);
+    const contrastColor = getContrastColor(backgroundColor);
+    button.style.color = contrastColor;
+    console.log('Aplicado contraste a botón de contraste:', button.textContent, 'Color:', contrastColor);
+  });
+  
+  // 4. Elementos de la paleta de colores (si están visibles)
+  const colorItems = document.querySelectorAll('.color-item');
+  colorItems.forEach(item => {
+    const backgroundColor = rgbToHex(getComputedStyle(item).backgroundColor);
+    const contrastColor = getContrastColor(backgroundColor);
+    
+    // Aplicar a elementos de texto dentro del color-item
+    const textElements = item.querySelectorAll('.color-hex, .color-rgb, .color-percentage');
+    textElements.forEach(textEl => {
+      textEl.style.color = contrastColor;
+    });
+    console.log('Aplicado contraste a elementos de color');
+  });
+  
+  // 5. Botones de tema (si están visibles)
+  const themeButtons = document.querySelectorAll('.theme-btn');
+  themeButtons.forEach(button => {
+    const backgroundColor = rgbToHex(getComputedStyle(button).backgroundColor);
+    const contrastColor = getContrastColor(backgroundColor);
+    button.style.color = contrastColor;
+    console.log('Aplicado contraste a botón de tema:', button.textContent, 'Color:', contrastColor);
+  });
+  
+  // 6. Elementos de análisis de contraste (si están visibles)
+  const contrastItems = document.querySelectorAll('.contrast-item');
+  contrastItems.forEach(item => {
+    const backgroundColor = rgbToHex(getComputedStyle(item).backgroundColor);
+    const contrastColor = getContrastColor(backgroundColor);
+    
+    // Aplicar a elementos de texto dentro del contrast-item
+    const textElements = item.querySelectorAll('.contrast-label, .contrast-ratio, .contrast-status');
+    textElements.forEach(textEl => {
+      textEl.style.color = contrastColor;
+    });
+    console.log('Aplicado contraste a elementos de análisis');
+  });
+  
+  console.log('Mejoras de contraste aplicadas');
+}
+
+// Función para restaurar contraste por defecto
+function restoreDefaultContrast() {
+  console.log('Restaurando contraste por defecto...');
+  
+  // Restaurar todos los elementos que podrían haber sido modificados
+  const elementsToRestore = [
+    '.mode-btn',
+    '.analyzer-header h2',
+    '.analyzer-header p',
+    '.contrast-btn',
+    '.color-hex',
+    '.color-rgb',
+    '.color-percentage',
+    '.theme-btn',
+    '.contrast-label',
+    '.contrast-ratio',
+    '.contrast-status'
+  ];
+  
+  elementsToRestore.forEach(selector => {
+    const elements = document.querySelectorAll(selector);
+    elements.forEach(element => {
+      element.style.color = '';
+      console.log('Restaurado contraste de:', element.textContent || selector);
+    });
+  });
+  
+  console.log('Contraste restaurado por defecto');
+}
+
+// Función mejorada para calcular el contraste de un color
+function getContrastColor(hexColor) {
+  return getOptimalTextColor(hexColor);
 }
 
 const extractPalette = async () => {
@@ -155,6 +397,7 @@ const extractPalette = async () => {
   
   extracting.value = true
   palette.value = []
+  contrastAnalysis.value = []
   
   try {
     // Create canvas to analyze image
@@ -171,6 +414,9 @@ const extractPalette = async () => {
       const colors = extractColorsFromImageData(imageData)
       palette.value = colors
       
+      // Analizar contraste después de generar la paleta
+      analyzePaletteContrast();
+      
       extracting.value = false
     }
     
@@ -184,7 +430,7 @@ const extractPalette = async () => {
 const extractColorsFromImageData = (imageData) => {
   const data = imageData.data
   const colorMap = new Map()
-  const totalPixels = data.length / 4
+  let totalSampledPixels = 0
   
   // Sample pixels (every 10th pixel for performance)
   for (let i = 0; i < data.length; i += 40) {
@@ -196,35 +442,143 @@ const extractColorsFromImageData = (imageData) => {
     // Skip transparent pixels
     if (a < 128) continue
     
-    // Quantize colors to reduce noise
-    const quantizedR = Math.round(r / 25) * 25
-    const quantizedG = Math.round(g / 25) * 25
-    const quantizedB = Math.round(b / 25) * 25
+    totalSampledPixels++
+    
+    // Quantize colors less aggressively to preserve more variation
+    const quantizedR = Math.round(r / 15) * 15
+    const quantizedG = Math.round(g / 15) * 15
+    const quantizedB = Math.round(b / 15) * 15
     
     const colorKey = `${quantizedR},${quantizedG},${quantizedB}`
     colorMap.set(colorKey, (colorMap.get(colorKey) || 0) + 1)
   }
   
   // Convert to array and sort by frequency
-  const colors = Array.from(colorMap.entries())
+  const allColors = Array.from(colorMap.entries())
     .map(([colorKey, count]) => {
       const [r, g, b] = colorKey.split(',').map(Number)
-      const hex = rgbToHex(r, g, b)
-      const percentage = (count / totalPixels) * 100
+      const hex = rgbToHexValues(r, g, b)
+      const percentage = (count / totalSampledPixels) * 100
+      
+      // Calculate HSL values for better color analysis
+      const hsl = rgbToHsl(r, g, b)
       
       return {
         rgb: [r, g, b],
         hex,
-        percentage
+        percentage,
+        hsl,
+        saturation: hsl.s,
+        lightness: hsl.l
       }
     })
     .sort((a, b) => b.percentage - a.percentage)
-    .slice(0, 8) // Top 8 colors
   
-  return colors
+  // Improved color selection algorithm
+  const selectedColors = selectDiverseColors(allColors, 8)
+  
+  return selectedColors
 }
 
-const rgbToHex = (r, g, b) => {
+// Convert RGB to HSL for better color analysis
+const rgbToHsl = (r, g, b) => {
+  r /= 255
+  g /= 255
+  b /= 255
+  
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let h, s, l = (max + min) / 2
+  
+  if (max === min) {
+    h = s = 0 // achromatic
+  } else {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break
+      case g: h = (b - r) / d + 2; break
+      case b: h = (r - g) / d + 4; break
+    }
+    h /= 6
+  }
+  
+  return {
+    h: Math.round(h * 360),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100)
+  }
+}
+
+// Improved color selection algorithm
+const selectDiverseColors = (allColors, maxColors) => {
+  if (allColors.length <= maxColors) {
+    return allColors
+  }
+  
+  const selected = []
+  const used = new Set()
+  
+  // First, add the most frequent color
+  selected.push(allColors[0])
+  used.add(allColors[0].hex)
+  
+  // Then add colors that are most different from already selected ones
+  for (let i = 1; i < maxColors; i++) {
+    let bestColor = null
+    let maxDifference = -1
+    
+    for (const color of allColors) {
+      if (used.has(color.hex)) continue
+      
+      // Calculate minimum difference from all selected colors
+      let minDifference = Infinity
+      for (const selectedColor of selected) {
+        const difference = calculateColorDifference(color, selectedColor)
+        minDifference = Math.min(minDifference, difference)
+      }
+      
+      // Prefer colors with higher saturation and good frequency
+      const score = minDifference * (1 + color.saturation / 100) * (color.percentage / 100)
+      
+      if (score > maxDifference) {
+        maxDifference = score
+        bestColor = color
+      }
+    }
+    
+    if (bestColor) {
+      selected.push(bestColor)
+      used.add(bestColor.hex)
+    }
+  }
+  
+  return selected.sort((a, b) => b.percentage - a.percentage)
+}
+
+// Calculate color difference using multiple metrics
+const calculateColorDifference = (color1, color2) => {
+  const [r1, g1, b1] = color1.rgb
+  const [r2, g2, b2] = color2.rgb
+  
+  // Euclidean distance in RGB space
+  const rgbDiff = Math.sqrt(
+    Math.pow(r1 - r2, 2) + 
+    Math.pow(g1 - g2, 2) + 
+    Math.pow(b1 - b2, 2)
+  )
+  
+  // HSL difference
+  const hDiff = Math.abs(color1.hsl.h - color2.hsl.h)
+  const sDiff = Math.abs(color1.hsl.s - color2.hsl.s)
+  const lDiff = Math.abs(color1.hsl.l - color2.hsl.l)
+  
+  // Weighted combination
+  return rgbDiff * 0.6 + hDiff * 0.3 + sDiff * 0.1 + lDiff * 0.1
+}
+
+const rgbToHexValues = (r, g, b) => {
   return '#' + [r, g, b].map(x => {
     const hex = x.toString(16)
     return hex.length === 1 ? '0' + hex : hex
@@ -473,6 +827,202 @@ const copyCode = async () => {
 .color-percentage {
   font-size: 0.8rem;
   color: #999;
+}
+
+.contrast-analysis-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.contrast-analysis-section h4 {
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.contrast-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 240px));
+  gap: 16px;
+  margin-bottom: 25px;
+  justify-content: center;
+}
+
+.contrast-item {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.contrast-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.contrast-pair {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.color-code {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.color-sample {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.color-sample:hover {
+  transform: scale(1.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.contrast-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.color-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contrast-label {
+  font-size: 0.9rem;
+  color: #495057;
+  font-family: monospace;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.contrast-label:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.label-icon {
+  font-size: 1em;
+  opacity: 0.8;
+}
+
+.contrast-metrics {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.contrast-ratio {
+  font-weight: bold;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #ffffff;
+  border-radius: 5px;
+  border: 1px solid #dee2e6;
+  font-size: 0.9rem;
+}
+
+.ratio-icon {
+  font-size: 1em;
+  opacity: 0.8;
+}
+
+.contrast-status {
+  font-weight: bold;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+.contrast-status.pass {
+  color: #38a169;
+  background: rgba(56, 161, 105, 0.1);
+  border: 1px solid rgba(56, 161, 105, 0.3);
+}
+
+.contrast-status.fail {
+  color: #e53e3e;
+  background: rgba(229, 62, 62, 0.1);
+  border: 1px solid rgba(229, 62, 62, 0.3);
+}
+
+.contrast-status .status-icon {
+  font-size: 1em;
+}
+
+.contrast-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 25px;
+}
+
+.contrast-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid #dee2e6;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.contrast-btn.improve {
+  background: #4caf50;
+  color: white;
+  border-color: #4caf50;
+}
+
+.contrast-btn.restore {
+  background: #f8f9fa;
+  color: #495057;
+  border-color: #dee2e6;
+}
+
+.contrast-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.contrast-btn.improve:hover {
+  background: #45a049;
+  border-color: #45a049;
+}
+
+.contrast-btn.restore:hover {
+  background: #e9ecef;
+  color: #212529;
 }
 
 .export-section {

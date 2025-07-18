@@ -175,18 +175,18 @@ const selectPokemon = (pokemon) => {
 .search-input {
   width: 100%;
   padding: 12px 20px 12px 50px;
-  border: 2px solid var(--theme-border);
+  border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 16px;
   transition: all 0.3s ease;
-  background: var(--theme-tertiary);
-  color: var(--theme-quaternary);
+  background: #ffffff;
+  color: #2d3748;
   font-weight: 500;
 }
 
 .search-input::placeholder {
-  color: var(--theme-quaternary);
-  opacity: 0.7;
+  color: #718096;
+  opacity: 0.8;
   font-weight: 500;
 }
 
@@ -203,17 +203,17 @@ const selectPokemon = (pokemon) => {
   top: 50%;
   transform: translateY(-50%);
   font-size: 18px;
-  color: var(--theme-quaternary);
+  color: #4a5568;
 }
 
 .shiny-toggle {
   text-align: center;
   margin-bottom: 20px;
-  background: var(--theme-tertiary);
+  background: #ffffff;
   padding: 15px 25px;
   border-radius: 15px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 2px solid var(--theme-border);
+  border: 2px solid #e2e8f0;
   display: inline-block;
 }
 
@@ -222,7 +222,7 @@ const selectPokemon = (pokemon) => {
   align-items: center;
   cursor: pointer;
   font-weight: 600;
-  color: var(--theme-quaternary);
+  color: #2d3748;
   font-size: 16px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
@@ -235,11 +235,11 @@ const selectPokemon = (pokemon) => {
   position: relative;
   width: 60px;
   height: 30px;
-  background: var(--theme-quinary);
+  background: #f7fafc;
   border-radius: 15px;
   margin-right: 15px;
   transition: all 0.3s ease;
-  border: 2px solid var(--theme-border);
+  border: 2px solid #e2e8f0;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -269,7 +269,7 @@ const selectPokemon = (pokemon) => {
 .toggle-text {
   font-size: 16px;
   font-weight: 600;
-  color: var(--theme-quaternary);
+  color: #2d3748;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 

@@ -77,7 +77,7 @@ const copyColor = async (hex) => {
 
 .palette-display {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 15px;
   margin-bottom: 30px;
 }
@@ -166,9 +166,19 @@ const copyColor = async (hex) => {
 }
 
 @media (max-width: 768px) {
+  .palette-display {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
   .theme-buttons {
     flex-direction: column;
     align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .palette-display {
+    grid-template-columns: 1fr;
   }
 }
 </style> 

@@ -1,6 +1,6 @@
 <template>
   <div class="selected-pokemon">
-    <div class="pokemon-card">
+    <div class="pokemon-card animate-in">
       <!-- Close button -->
       <button @click="$emit('close')" class="close-btn">
         <span class="close-icon">×</span>
@@ -13,7 +13,6 @@
             :alt="pokemon.name"
             class="pokemon-image"
           />
-          <div class="shiny-indicator" v-if="isShiny">✨</div>
         </div>
         
         <div class="pokemon-basic-info">
@@ -29,10 +28,13 @@
           </div>
         </div>
         
-        <button @click="$emit('analyze')" class="analyze-btn">
-          <span class="btn-icon">🎨</span>
-          Analizar Paleta
-        </button>
+        <!-- Botón de acción en el espacio libre -->
+        <div class="controls-container">
+          <button @click="$emit('analyze')" class="analyze-btn-compact">
+            <span class="btn-icon-small">🎨</span>
+            Analizar Paleta
+          </button>
+        </div>
       </div>
       
       <div class="pokemon-content">
@@ -67,20 +69,7 @@
           </p>
         </div>
         
-        <!-- Información de evolución -->
-        <div class="pokemon-evolution" v-if="pokemon.species?.evolution_chain">
-          <h4>Información de Evolución</h4>
-          <div class="evolution-info">
-            <div class="evolution-item">
-              <span class="evolution-label">Cadena evolutiva:</span>
-              <span class="evolution-value">{{ pokemon.species.evolution_chain.url.split('/').pop() }}</span>
-            </div>
-            <div class="evolution-item">
-              <span class="evolution-label">Grupo de huevos:</span>
-              <span class="evolution-value">{{ formatEggGroupName(pokemon.species.egg_groups?.[0]?.name) }}</span>
-            </div>
-          </div>
-        </div>
+
       </div>
       
       <!-- Galería de imágenes adicionales -->
@@ -415,19 +404,27 @@ const toggleCategory = (category) => {
 .close-icon {
   font-size: 20px;
   font-weight: bold;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin-top: -2px; /* Ajuste fino para centrado vertical perfecto */
 }
 
 .pokemon-header {
   display: flex;
   align-items: center;
-  gap: 30px;
-  margin-bottom: 20px;
+  gap: 25px;
+  margin-bottom: 25px;
+  padding: 0 10px;
 }
 
 .pokemon-image-container {
   position: relative;
   flex-shrink: 0;
-  margin-right: 20px;
+  margin-right: 15px;
 }
 
 .pokemon-image {
@@ -470,10 +467,70 @@ const toggleCategory = (category) => {
   text-align: left;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
   width: 100%;
-  margin-right: 20px;
+  margin-right: 15px;
+}
+
+/* Controles compactos */
+.controls-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 160px;
+  flex-shrink: 0;
+  margin-left: 20px;
+}
+
+.analyze-btn-compact {
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  color: var(--theme-tertiary);
+  border: 3px solid var(--theme-border);
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  min-width: 140px;
+  justify-content: center;
+}
+
+.analyze-btn-compact::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.analyze-btn-compact:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border-color: var(--theme-primary);
+}
+
+.analyze-btn-compact:hover::before {
+  left: 100%;
+}
+
+.analyze-btn-compact:active {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.btn-icon-small {
+  font-size: 16px;
 }
 
 .pokemon-basic-info h3 {
@@ -774,10 +831,17 @@ const toggleCategory = (category) => {
     height: 140px;
   }
   
-  .analyze-btn {
-    align-self: center;
-    padding: 15px 25px;
-    font-size: 16px;
+  .controls-container {
+    margin-left: 0;
+    margin-top: 15px;
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .analyze-btn-compact {
+    padding: 16px 28px;
+    font-size: 15px;
+    min-width: 160px;
   }
   
   .gallery-grid {
@@ -804,9 +868,14 @@ const toggleCategory = (category) => {
     gap: 12px;
   }
   
-  .analyze-btn {
+  .controls-container {
+    margin-top: 10px;
+  }
+  
+  .analyze-btn-compact {
     padding: 12px 20px;
-    font-size: 14px;
+    font-size: 13px;
+    min-width: 140px;
   }
   
   .gallery-grid {
@@ -828,4 +897,45 @@ const toggleCategory = (category) => {
     min-height: 40px;
   }
 }
+
+/* Animación de entrada para el PokemonCard */
+.animate-in {
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animación adicional para elementos internos */
+.pokemon-header {
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.pokemon-content {
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.pokemon-gallery {
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 </style> 
