@@ -1,6 +1,5 @@
 <template>
   <div class="export-section">
-    <h4>Exportar Paleta</h4>
     <div class="export-buttons">
       <button @click="exportToCSS" class="export-btn css">
         Exportar CSS
@@ -118,7 +117,8 @@ const copyCode = async () => {
 
 <style scoped>
 .export-section {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+  margin-top: 20px;
 }
 
 .export-section h4 {

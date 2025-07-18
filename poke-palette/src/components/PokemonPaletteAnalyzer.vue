@@ -36,6 +36,8 @@
         :pokemon="selectedPokemon"
         :is-shiny="isShiny"
         @analyze="analyzeSelectedPokemon"
+        @image-selected="handleImageSelected"
+        @close="closePokemonCard"
       />
     </div>
     
@@ -86,10 +88,14 @@ const selectPokemonFromAPI = async (pokemon) => {
       getPokemonSpecies(pokemon.name)
     ])
     
+    const baseUrl = isShiny.value 
+      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${details.id}.png`
+      : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${details.id}.png`
+    
     selectedPokemon.value = {
       ...details,
       species,
-      imageUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${details.id}.png`
+      imageUrl: baseUrl
     }
   } catch (error) {
     console.error('Error fetching Pokémon details:', error)
@@ -100,10 +106,24 @@ const updateShiny = (value) => {
   isShiny.value = value
 }
 
+const handleImageSelected = (image) => {
+  if (selectedPokemon.value) {
+    selectedPokemon.value.imageUrl = image.url
+  }
+}
+
+const closePokemonCard = () => {
+  selectedPokemon.value = null
+  palette.value = []
+}
+
 // Watcher para actualizar imagen cuando cambia shiny
 watch(isShiny, (newValue) => {
   if (selectedPokemon.value) {
-    selectedPokemon.value.imageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${selectedPokemon.value.id}.png`
+    const baseUrl = newValue 
+      ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${selectedPokemon.value.id}.png`
+      : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${selectedPokemon.value.id}.png`
+    selectedPokemon.value.imageUrl = baseUrl
   }
 })
 
@@ -132,10 +152,10 @@ const analyzeSelectedPokemon = async () => {
 const extractColorsFromImageData = (imageData) => {
   const data = imageData.data
   const colorMap = new Map()
-  const totalPixels = data.length / 4
+  let totalSampledPixels = 0
   
-  // Sample pixels (every 10th pixel for performance)
-  for (let i = 0; i < data.length; i += 40) {
+  // Sample pixels (every 5th pixel for better accuracy)
+  for (let i = 0; i < data.length; i += 20) {
     const r = data[i]
     const g = data[i + 1]
     const b = data[i + 2]
@@ -144,10 +164,12 @@ const extractColorsFromImageData = (imageData) => {
     // Skip transparent pixels
     if (a < 128) continue
     
-    // Quantize colors to reduce noise
-    const quantizedR = Math.round(r / 25) * 25
-    const quantizedG = Math.round(g / 25) * 25
-    const quantizedB = Math.round(b / 25) * 25
+    totalSampledPixels++
+    
+    // Quantize colors to reduce noise (less aggressive)
+    const quantizedR = Math.round(r / 15) * 15
+    const quantizedG = Math.round(g / 15) * 15
+    const quantizedB = Math.round(b / 15) * 15
     
     const colorKey = `${quantizedR},${quantizedG},${quantizedB}`
     colorMap.set(colorKey, (colorMap.get(colorKey) || 0) + 1)
@@ -158,7 +180,7 @@ const extractColorsFromImageData = (imageData) => {
     .map(([colorKey, count]) => {
       const [r, g, b] = colorKey.split(',').map(Number)
       const hex = rgbToHex(r, g, b)
-      const percentage = (count / totalPixels) * 100
+      const percentage = (count / totalSampledPixels) * 100
       
       return {
         rgb: [r, g, b],

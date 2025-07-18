@@ -34,7 +34,7 @@
       <div 
         v-for="pokemon in searchResults"
         :key="pokemon.name"
-        @click="$emit('select-pokemon', pokemon)"
+        @click="selectPokemon(pokemon)"
         class="search-item"
         :style="{ animationDelay: `${$index * 0.1}s` }"
       >
@@ -147,17 +147,29 @@ const searchPokemon = async () => {
 const handleImageError = (event) => {
   event.target.src = 'https://via.placeholder.com/96x96?text=Pokemon'
 }
+
+const selectPokemon = (pokemon) => {
+  emit('select-pokemon', pokemon)
+  // Limpiar búsqueda y resultados
+  searchQuery.value = ''
+  searchResults.value = []
+}
 </script>
 
 <style scoped>
 .search-section {
   margin-bottom: 30px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .search-container {
   position: relative;
   max-width: 400px;
   margin: 0 auto 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .search-input {
@@ -169,12 +181,20 @@ const handleImageError = (event) => {
   transition: all 0.3s ease;
   background: var(--theme-tertiary);
   color: var(--theme-quaternary);
+  font-weight: 500;
+}
+
+.search-input::placeholder {
+  color: var(--theme-quaternary);
+  opacity: 0.7;
+  font-weight: 500;
 }
 
 .search-input:focus {
   outline: none;
   border-color: var(--theme-primary);
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+  background: var(--theme-tertiary);
 }
 
 .search-icon {
@@ -189,14 +209,22 @@ const handleImageError = (event) => {
 .shiny-toggle {
   text-align: center;
   margin-bottom: 20px;
+  background: var(--theme-tertiary);
+  padding: 15px 25px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--theme-border);
+  display: inline-block;
 }
 
 .toggle-label {
   display: inline-flex;
   align-items: center;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--theme-quaternary);
+  font-size: 16px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .toggle-input {
@@ -205,36 +233,44 @@ const handleImageError = (event) => {
 
 .toggle-slider {
   position: relative;
-  width: 50px;
-  height: 24px;
+  width: 60px;
+  height: 30px;
   background: var(--theme-quinary);
-  border-radius: 12px;
-  margin-right: 10px;
+  border-radius: 15px;
+  margin-right: 15px;
   transition: all 0.3s ease;
+  border: 2px solid var(--theme-border);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .toggle-slider:before {
   content: '';
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   background: var(--theme-tertiary);
   border-radius: 50%;
-  top: 2px;
-  left: 2px;
+  top: 1px;
+  left: 1px;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .toggle-input:checked + .toggle-slider {
-  background: var(--theme-secondary);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  border-color: var(--theme-primary);
 }
 
 .toggle-input:checked + .toggle-slider:before {
-  transform: translateX(26px);
+  transform: translateX(30px);
+  background: var(--theme-tertiary);
 }
 
 .toggle-text {
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--theme-quaternary);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .search-results {
@@ -245,6 +281,7 @@ const handleImageError = (event) => {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
   max-height: 400px;
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid var(--theme-border);
 }
 
@@ -257,6 +294,8 @@ const handleImageError = (event) => {
   transition: all 0.3s ease;
   border-bottom: 1px solid var(--theme-border);
   animation: slideIn 0.3s ease-out;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .search-item:last-child {
@@ -311,6 +350,7 @@ const handleImageError = (event) => {
 .pokemon-details {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .pokemon-name {
@@ -319,6 +359,9 @@ const handleImageError = (event) => {
   font-weight: 600;
   color: var(--theme-quaternary);
   transition: color 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pokemon-types {
