@@ -6,6 +6,9 @@
         @input="searchPokemon"
         placeholder="Buscar Pokémon por nombre..."
         class="search-input"
+        aria-label="Buscar Pokémon"
+        role="searchbox"
+        autocomplete="off"
       />
       <div class="search-icon">🔍</div>
     </div>
@@ -35,8 +38,13 @@
         v-for="pokemon in searchResults"
         :key="pokemon.name"
         @click="selectPokemon(pokemon)"
+        @keydown.enter="selectPokemon(pokemon)"
+        @keydown.space="selectPokemon(pokemon)"
         class="search-item"
         :style="{ animationDelay: `${$index * 0.1}s` }"
+        role="button"
+        :aria-label="`Seleccionar ${formatPokemonName(pokemon.name)}`"
+        tabindex="0"
       >
         <div class="pokemon-thumbnail-container">
           <img 
@@ -79,6 +87,11 @@
     <div v-if="searching" class="search-loading">
       <div class="loading-spinner"></div>
       <p>Buscando Pokémon...</p>
+      <div class="loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
     </div>
     
     <!-- No results -->
@@ -123,6 +136,11 @@ const searchPokemon = async () => {
   
   try {
     const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1000`)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
     const data = await response.json()
     
     const filtered = data.results.filter(pokemon => 
@@ -137,6 +155,9 @@ const searchPokemon = async () => {
     searchResults.value = pokemonWithIds
   } catch (error) {
     console.error('Error searching Pokémon:', error)
+    // Mostrar mensaje de error al usuario
+    searchResults.value = []
+    // Aquí podrías mostrar una notificación de error
   } finally {
     searching.value = false
   }
@@ -153,6 +174,12 @@ const selectPokemon = (pokemon) => {
   // Limpiar búsqueda y resultados
   searchQuery.value = ''
   searchResults.value = []
+  
+  // Enfocar el input de búsqueda después de seleccionar
+  const searchInput = document.querySelector('.search-input')
+  if (searchInput) {
+    searchInput.focus()
+  }
 }
 </script>
 
@@ -422,6 +449,40 @@ const selectPokemon = (pokemon) => {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 15px;
+}
+
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--theme-primary);
+  animation: loadingDots 1.4s infinite ease-in-out;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes loadingDots {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes spin {

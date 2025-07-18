@@ -1,7 +1,10 @@
 <template>
   <div class="color-palette-extractor">
     <div class="upload-section">
-      <h2>Analizador de Paletas Pokémon</h2>
+      <h2>
+        Analizador de Paletas Pokémon
+        <InfoTooltip text="¡Convierte cualquier imagen de Pokémon en una paleta de colores profesional! Esta herramienta mágica encuentra automáticamente los colores más bonitos y te ayuda a crear diseños increíbles." size="large" />
+      </h2>
       <p>Sube una imagen de un Pokémon para extraer su paleta de colores</p>
       
       <!-- Upload area -->
@@ -33,13 +36,16 @@
       />
       
       <!-- Extract button -->
-      <button 
-        v-if="selectedImage && !extracting"
-        @click="extractPalette" 
-        class="extract-btn"
-      >
-        Extraer Paleta de Colores
-      </button>
+      <div class="button-container">
+        <button 
+          v-if="selectedImage && !extracting"
+          @click="extractPalette" 
+          class="extract-btn"
+        >
+          Extraer Paleta de Colores
+        </button>
+        <InfoTooltip text="Analiza la imagen y extrae los 8 colores dominantes más representativos. Utiliza algoritmos de cuantización de color para identificar las tonalidades más importantes y crear una paleta optimizada." size="small" />
+      </div>
       
       <div v-if="extracting" class="extracting">
         <div class="spinner"></div>
@@ -49,7 +55,7 @@
     
     <!-- Results section -->
     <div v-if="palette.length > 0" class="results-section">
-      <h3>Paleta de Colores Extraída</h3>
+      <h3>Extractor de Paletas <InfoTooltip text="Convierte cualquier imagen de Pokémon en una paleta de colores profesional. Esta herramienta identifica automáticamente los colores dominantes y crea paletas optimizadas para uso en diseño gráfico." size="medium" /></h3>
       
       <!-- Color palette display -->
       <div class="palette-display">
@@ -69,6 +75,15 @@
             <span class="color-percentage">{{ color.percentage.toFixed(1) }}%</span>
           </div>
         </div>
+      </div>
+      
+      <!-- Mensaje informativo cuando hay pocos colores -->
+      <div v-if="palette.length < 8" class="palette-info">
+        <p class="info-message">
+          <span class="info-icon">ℹ️</span>
+          Se encontraron {{ palette.length }} colores dominantes en la imagen. 
+          <span v-if="palette.length < 4">La imagen tiene una paleta de colores limitada.</span>
+        </p>
       </div>
       
       <!-- Contrast Analysis Results -->
@@ -138,7 +153,10 @@
       
       <!-- Export options -->
       <div class="export-section">
-        <h4>Exportar Paleta</h4>
+        <h4>
+          Exportar Paleta
+          <InfoTooltip text="Exporta la paleta de colores en diferentes formatos para uso en herramientas de diseño y desarrollo. Incluye opciones para CSS, Tailwind, Figma y JSON." size="small" />
+        </h4>
         <div class="export-buttons">
           <button @click="exportToCSS" class="export-btn css">
             Exportar CSS
@@ -165,6 +183,16 @@
         </div>
         <pre><code>{{ generatedCode }}</code></pre>
       </div>
+      
+      <!-- Notification -->
+      <Transition name="notification">
+        <div v-if="showNotification" class="notification">
+          <div class="notification-content">
+            <span class="notification-icon">✓</span>
+            <span class="notification-text">{{ notificationText }}</span>
+          </div>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
@@ -179,6 +207,7 @@ import {
   calculateContrastRatio,
   rgbToHex
 } from '../utils/contrastUtils.js'
+import InfoTooltip from './InfoTooltip.vue'
 
 // Reactive data
 const selectedImage = ref(null)
@@ -188,6 +217,8 @@ const generatedCode = ref('')
 const copied = ref(false)
 const fileInput = ref(null)
 const contrastAnalysis = ref([])
+const showNotification = ref(false)
+const notificationText = ref('')
 
 // Methods
 const triggerFileInput = () => {
@@ -196,13 +227,57 @@ const triggerFileInput = () => {
 
 const handleFileSelect = (event) => {
   const file = event.target.files[0]
-  if (file && file.type.startsWith('image/')) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      selectedImage.value = e.target.result
-    }
-    reader.readAsDataURL(file)
+  
+  // Validar que se seleccionó un archivo
+  if (!file) {
+    notificationText.value = 'No se seleccionó ningún archivo.'
+    showNotification.value = true
+    setTimeout(() => {
+      showNotification.value = false
+    }, 3000)
+    return
   }
+  
+  // Validar tipo de archivo
+  if (!file.type.startsWith('image/')) {
+    notificationText.value = 'Por favor selecciona un archivo de imagen válido (JPG, PNG, WebP).'
+    showNotification.value = true
+    setTimeout(() => {
+      showNotification.value = false
+    }, 3000)
+    return
+  }
+  
+  // Validar tamaño del archivo (máximo 10MB)
+  const maxSize = 10 * 1024 * 1024 // 10MB
+  if (file.size > maxSize) {
+    notificationText.value = 'El archivo es demasiado grande. Máximo 10MB.'
+    showNotification.value = true
+    setTimeout(() => {
+      showNotification.value = false
+    }, 3000)
+    return
+  }
+  
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    selectedImage.value = e.target.result
+    notificationText.value = 'Imagen cargada exitosamente.'
+    showNotification.value = true
+    setTimeout(() => {
+      showNotification.value = false
+    }, 2000)
+  }
+  
+  reader.onerror = () => {
+    notificationText.value = 'Error al leer el archivo.'
+    showNotification.value = true
+    setTimeout(() => {
+      showNotification.value = false
+    }, 3000)
+  }
+  
+  reader.readAsDataURL(file)
 }
 
 const handleDrop = (event) => {
@@ -406,23 +481,61 @@ const extractPalette = async () => {
     const img = new Image()
     
     img.onload = () => {
-      canvas.width = img.width
-      canvas.height = img.height
-      ctx.drawImage(img, 0, 0)
-      
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const colors = extractColorsFromImageData(imageData)
-      palette.value = colors
-      
-      // Analizar contraste después de generar la paleta
-      analyzePaletteContrast();
-      
+      try {
+        canvas.width = img.width
+        canvas.height = img.height
+        ctx.drawImage(img, 0, 0)
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const colors = extractColorsFromImageData(imageData)
+        
+        if (colors.length === 0) {
+          throw new Error('No se pudieron extraer colores de la imagen')
+        }
+        
+        palette.value = colors
+        
+        // Analizar contraste después de generar la paleta
+        analyzePaletteContrast();
+        
+        // Mostrar notificación de éxito
+        notificationText.value = `¡Paleta extraída exitosamente! Se encontraron ${colors.length} colores.`
+        showNotification.value = true
+        setTimeout(() => {
+          showNotification.value = false
+        }, 3000)
+        
+      } catch (error) {
+        console.error('Error processing image:', error)
+        notificationText.value = 'Error al procesar la imagen. Intenta con otra imagen.'
+        showNotification.value = true
+        setTimeout(() => {
+          showNotification.value = false
+        }, 3000)
+      } finally {
+        extracting.value = false
+      }
+    }
+    
+    img.onerror = () => {
+      console.error('Error loading image')
+      notificationText.value = 'Error al cargar la imagen. Verifica que el archivo sea válido.'
+      showNotification.value = true
+      setTimeout(() => {
+        showNotification.value = false
+      }, 3000)
       extracting.value = false
     }
     
+    img.crossOrigin = 'anonymous'
     img.src = selectedImage.value
   } catch (error) {
     console.error('Error extracting palette:', error)
+    notificationText.value = 'Error inesperado al extraer la paleta.'
+    showNotification.value = true
+    setTimeout(() => {
+      showNotification.value = false
+    }, 3000)
     extracting.value = false
   }
 }
@@ -472,9 +585,10 @@ const extractColorsFromImageData = (imageData) => {
         lightness: hsl.l
       }
     })
+    .filter(color => color.percentage > 0.5) // Filtrar colores con porcentaje muy bajo
     .sort((a, b) => b.percentage - a.percentage)
   
-  // Improved color selection algorithm
+  // Improved color selection algorithm - solo devolver colores que realmente existen
   const selectedColors = selectDiverseColors(allColors, 8)
   
   return selectedColors
@@ -513,6 +627,7 @@ const rgbToHsl = (r, g, b) => {
 
 // Improved color selection algorithm
 const selectDiverseColors = (allColors, maxColors) => {
+  // Si hay menos colores que el máximo, devolver todos los disponibles
   if (allColors.length <= maxColors) {
     return allColors
   }
@@ -525,7 +640,7 @@ const selectDiverseColors = (allColors, maxColors) => {
   used.add(allColors[0].hex)
   
   // Then add colors that are most different from already selected ones
-  for (let i = 1; i < maxColors; i++) {
+  for (let i = 1; i < maxColors && i < allColors.length; i++) {
     let bestColor = null
     let maxDifference = -1
     
@@ -551,6 +666,9 @@ const selectDiverseColors = (allColors, maxColors) => {
     if (bestColor) {
       selected.push(bestColor)
       used.add(bestColor.hex)
+    } else {
+      // Si no encontramos un color diferente, parar aquí
+      break
     }
   }
   
@@ -588,14 +706,21 @@ const rgbToHexValues = (r, g, b) => {
 const copyColor = async (hex) => {
   try {
     await navigator.clipboard.writeText(hex)
-    // Show feedback
-    const originalText = event.target.textContent
-    event.target.textContent = '¡Copiado!'
+    notificationText.value = `¡Color ${hex} copiado al portapapeles!`
+    showNotification.value = true
+    
+    // Hide notification after 3 seconds
     setTimeout(() => {
-      event.target.textContent = originalText
-    }, 1000)
+      showNotification.value = false
+    }, 3000)
   } catch (error) {
     console.error('Error copying color:', error)
+    notificationText.value = 'Error al copiar el color'
+    showNotification.value = true
+    
+    setTimeout(() => {
+      showNotification.value = false
+    }, 3000)
   }
 }
 
@@ -665,6 +790,25 @@ const copyCode = async () => {
 .upload-section h2 {
   color: #333;
   margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.info-icon {
+  font-size: 1.1rem;
+  color: #3498db;
+  cursor: help;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.info-icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  color: #2980b9;
 }
 
 .upload-section p {
@@ -728,6 +872,13 @@ const copyCode = async () => {
   line-height: 1;
 }
 
+.button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 .extract-btn {
   background: #3498db;
   color: white;
@@ -776,13 +927,17 @@ const copyCode = async () => {
   color: #333;
   margin-bottom: 20px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .palette-display {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 15px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .color-item {
@@ -794,17 +949,19 @@ const copyCode = async () => {
   background: #f8f9fa;
   cursor: pointer;
   transition: transform 0.2s ease;
+  border: 1px solid #dee2e6;
 }
 
 .color-item:hover {
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .color-swatch {
   width: 50px;
   height: 50px;
   border-radius: 8px;
-  border: 2px solid #ddd;
+  border: 2px solid #dee2e6;
 }
 
 .color-info {
@@ -817,6 +974,7 @@ const copyCode = async () => {
   font-weight: bold;
   font-family: monospace;
   font-size: 1.1rem;
+  color: #333;
 }
 
 .color-rgb {
@@ -826,7 +984,31 @@ const copyCode = async () => {
 
 .color-percentage {
   font-size: 0.8rem;
-  color: #999;
+  color: #888;
+}
+
+.palette-info {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 1px solid #dee2e6;
+}
+
+.info-message {
+  color: #495057;
+  font-size: 0.95rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.info-message .info-icon {
+  font-size: 1.1rem;
+  opacity: 0.8;
 }
 
 .contrast-analysis-section {
@@ -1115,6 +1297,78 @@ const copyCode = async () => {
   font-size: 0.9rem;
   line-height: 1.5;
   overflow-x: auto;
+}
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  max-width: 300px;
+}
+
+.notification-content {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.notification-icon {
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+}
+
+.notification-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+}
+
+/* Notification animations */
+.notification-enter-active,
+.notification-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.notification-enter-from {
+  opacity: 0;
+  transform: translateX(100%) scale(0.9);
+}
+
+.notification-leave-to {
+  opacity: 0;
+  transform: translateX(100%) scale(0.9);
+}
+
+.notification-enter-to,
+.notification-leave-from {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+/* Responsive notification */
+@media (max-width: 768px) {
+  .notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .notification-content {
+    padding: 10px 14px;
+  }
+  
+  .notification-text {
+    font-size: 13px;
+  }
 }
 
 @media (max-width: 768px) {

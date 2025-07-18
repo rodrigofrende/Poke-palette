@@ -12,6 +12,8 @@
             :src="pokemon.imageUrl" 
             :alt="pokemon.name"
             class="pokemon-image"
+            loading="lazy"
+            @error="handleImageError"
           />
         </div>
         
@@ -101,6 +103,7 @@
                     :src="image.url" 
                     :alt="`${formatPokemonName(pokemon.name)} - ${image.name}`"
                     class="gallery-image"
+                    loading="lazy"
                     @error="handleImageError"
                   />
                   <div class="gallery-overlay">

@@ -106,6 +106,15 @@ export function getOptimalTextColor(backgroundColor) {
 }
 
 /**
+ * Obtiene el color de contraste óptimo para un fondo dado
+ * @param {string} backgroundColor - Color de fondo
+ * @returns {string} Color de texto óptimo
+ */
+export function getContrastColor(backgroundColor) {
+  return getOptimalTextColor(backgroundColor);
+}
+
+/**
  * Verifica si el contraste cumple con los estándares WCAG
  * @param {string} textColor - Color del texto
  * @param {string} backgroundColor - Color de fondo
@@ -162,6 +171,25 @@ export function applyContrastToElements(selector, backgroundColor = null) {
   elements.forEach(element => {
     applyContrastToElement(element, backgroundColor);
   });
+}
+
+/**
+ * Aplica contraste a toda la aplicación
+ */
+export function applyContrastToEntireApp() {
+  // Aplicar contraste a elementos de texto principales
+  applyContrastToElements('.color-hex, .color-rgb, .color-percentage', null);
+  applyContrastToElements('.contrast-label, .contrast-ratio, .contrast-status', null);
+  applyContrastToElements('.metric-value, .metric-label', null);
+  applyContrastToElements('.theme-btn, .contrast-btn', null);
+  
+  // Aplicar contraste a botones de modo
+  applyContrastToElements('.mode-btn', null);
+  
+  // Aplicar contraste a elementos del header
+  applyContrastToElements('.analyzer-header h2, .analyzer-header p', null);
+  
+  console.log('Contraste aplicado a toda la aplicación');
 }
 
 /**

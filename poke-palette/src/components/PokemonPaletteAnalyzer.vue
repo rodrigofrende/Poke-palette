@@ -1,8 +1,9 @@
 <template>
   <div class="pokemon-palette-analyzer">
     <div class="analyzer-header">
-      <h2>🎨 Poké Palette Analyzer</h2>
+      <h1>Analizador de Paletas Pokémon <InfoTooltip text="Extrae y analiza las paletas de colores de imágenes de Pokémon. Esta herramienta identifica los colores dominantes y crea paletas profesionales para uso en diseño gráfico y desarrollo web." size="large" /></h1>
       <p>Selecciona un Pokémon o sube tu propia imagen para extraer su paleta de colores</p>
+
     </div>
     
     <!-- Mode selector -->
@@ -57,7 +58,67 @@
     
     <!-- Contrast Analysis Results -->
     <div v-if="contrastAnalysis.length > 0" class="contrast-analysis-section">
-      <h3>📊 Análisis de Contraste</h3>
+      <h3>
+        📊 Análisis de Contraste
+        <InfoTooltip text="Evalúa la legibilidad del texto sobre cada color de la paleta. Los resultados indican si el contraste cumple con los estándares de accesibilidad web. Los colores que aprueban son adecuados para uso en interfaces, mientras que los que fallan requieren ajustes para garantizar la legibilidad." size="medium" />
+      </h3>
+      
+      <!-- Global Contrast Analysis -->
+      <div class="global-contrast-analysis">
+        <h4>🎯 Análisis General de la Aplicación</h4>
+        <div class="contrast-metrics">
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">📊</span>
+              <span class="metric-title">Contraste Promedio</span>
+            </div>
+            <div class="metric-value">{{ globalContrastScore.toFixed(1) }}</div>
+            <div class="metric-bar">
+              <div 
+                class="metric-fill" 
+                :style="{ width: `${Math.min(globalContrastScore * 10, 100)}%` }"
+                :class="{ 'excellent': globalContrastScore >= 7, 'good': globalContrastScore >= 5 && globalContrastScore < 7, 'poor': globalContrastScore < 5 }"
+              ></div>
+            </div>
+            <div class="metric-label">{{ getContrastLabel(globalContrastScore) }}</div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">✅</span>
+              <span class="metric-title">Elementos Aprobados</span>
+            </div>
+            <div class="metric-value">{{ passedElements }}/{{ totalElements }}</div>
+            <div class="metric-bar">
+              <div 
+                class="metric-fill" 
+                :style="{ width: `${(passedElements / totalElements) * 100}%` }"
+                :class="{ 'excellent': (passedElements / totalElements) >= 0.8, 'good': (passedElements / totalElements) >= 0.6 && (passedElements / totalElements) < 0.8, 'poor': (passedElements / totalElements) < 0.6 }"
+              ></div>
+            </div>
+            <div class="metric-label">{{ Math.round((passedElements / totalElements) * 100) }}% de aprobación</div>
+          </div>
+          
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-icon">🎨</span>
+              <span class="metric-title">Paleta Actual</span>
+            </div>
+            <div class="metric-value">{{ currentThemeName }}</div>
+            <div class="palette-preview">
+              <div 
+                v-for="(color, index) in currentThemeColors" 
+                :key="index"
+                class="theme-color-swatch"
+                :style="{ backgroundColor: color }"
+                :title="color"
+              ></div>
+            </div>
+            <div class="metric-label">{{ palette.length }} colores extraídos</div>
+          </div>
+        </div>
+      </div>
+      
       <div class="contrast-results">
         <div 
           v-for="(result, index) in contrastAnalysis" 
@@ -111,12 +172,20 @@
       </div>
       
       <div class="contrast-actions">
-        <button @click="applyContrastImprovements" class="contrast-btn improve">
-          🔧 Mejorar Contraste
-        </button>
-        <button @click="restoreDefaultContrast" class="contrast-btn restore">
-          🔄 Restaurar Contraste
-        </button>
+        <div class="button-container">
+          <button @click="applyContrastImprovements" class="contrast-btn improve">
+            <span class="btn-icon">🔧</span>
+            Mejorar Contraste Global
+          </button>
+          <InfoTooltip text="Optimiza automáticamente los colores del texto para mejorar la legibilidad sobre los fondos de colores. Aplica ajustes de contraste basados en estándares de accesibilidad web." size="small" />
+        </div>
+        <div class="button-container">
+          <button @click="restoreDefaultContrast" class="contrast-btn restore">
+            <span class="btn-icon">🔄</span>
+            Restaurar Contraste Original
+          </button>
+          <InfoTooltip text="Restaura todos los colores del texto a su configuración original. Revierte los cambios de contraste aplicados automáticamente." size="small" />
+        </div>
       </div>
     </div>
     
@@ -130,7 +199,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { getPokemonDetails, getPokemonSpecies } from '../services/pokeApi.js'
 import ColorPaletteExtractor from './ColorPaletteExtractor.vue'
 import PokemonSearch from './PokemonSearch.vue'
@@ -146,6 +215,7 @@ import {
   calculateContrastRatio,
   rgbToHex
 } from '../utils/contrastUtils.js'
+import InfoTooltip from './InfoTooltip.vue'
 
 // Reactive data
 const mode = ref('api')
@@ -153,8 +223,53 @@ const selectedPokemon = ref(null)
 const palette = ref([])
 const isShiny = ref(false)
 const contrastAnalysis = ref([])
+const originalThemeColors = ref([])
+const isContrastApplied = ref(false)
+
+// Computed properties for global analysis
+const globalContrastScore = computed(() => {
+  if (contrastAnalysis.value.length === 0) return 0
+  
+  const totalRatio = contrastAnalysis.value.reduce((sum, result) => sum + result.ratio, 0)
+  const averageRatio = totalRatio / contrastAnalysis.value.length
+  
+  // Convert ratio to a 0-10 scale
+  return Math.min(averageRatio / 2, 10)
+})
+
+const passedElements = computed(() => {
+  return contrastAnalysis.value.filter(result => result.passes).length
+})
+
+const totalElements = computed(() => {
+  return contrastAnalysis.value.length
+})
+
+const currentThemeName = computed(() => {
+  if (isContrastApplied.value) {
+    return 'Tema Optimizado'
+  } else if (palette.value.length > 0) {
+    return 'Tema Pokémon'
+  } else {
+    return 'Tema Original'
+  }
+})
+
+const currentThemeColors = computed(() => {
+  if (palette.value.length > 0) {
+    return palette.value.map(color => color.hex)
+  }
+  return defaultTheme
+})
 
 // Methods
+const getContrastLabel = (score) => {
+  if (score >= 7) return 'Excelente'
+  if (score >= 5) return 'Bueno'
+  if (score >= 3) return 'Regular'
+  return 'Necesita Mejora'
+}
+
 const selectPokemonFromAPI = async (pokemon) => {
   try {
     const [details, species] = await Promise.all([
@@ -190,6 +305,10 @@ const closePokemonCard = () => {
   selectedPokemon.value = null
   palette.value = []
   contrastAnalysis.value = []
+  isContrastApplied.value = false
+  
+  // Restaurar tema por defecto al cerrar
+  restoreDefaultTheme()
 }
 
 // Watcher para actualizar imagen cuando cambia shiny
@@ -309,12 +428,116 @@ function analyzePaletteContrast() {
   contrastAnalysis.value = analysis;
 }
 
-// Función para aplicar mejoras de contraste
+// Función para aplicar mejoras de contraste global
 function applyContrastImprovements() {
-  console.log('Aplicando mejoras de contraste...');
+  console.log('Aplicando mejoras de contraste global...');
   
-  // Aplicar contraste a elementos visibles actualmente
-  applyContrastToVisibleElements();
+  // Guardar estado original si es la primera vez
+  if (!isContrastApplied.value) {
+    saveOriginalTheme();
+  }
+  
+  // Aplicar contraste a toda la aplicación
+  applyContrastToEntireApp();
+  
+  isContrastApplied.value = true;
+  
+  // Re-analizar contraste después de aplicar mejoras
+  setTimeout(() => {
+    analyzePaletteContrast();
+    updateContrastMetrics(); // Actualizar métricas en tiempo real
+  }, 200);
+}
+
+// Función para restaurar contraste por defecto
+function restoreDefaultContrast() {
+  console.log('Restaurando contraste por defecto...');
+  
+  // Restaurar tema original
+  restoreOriginalTheme();
+  
+  isContrastApplied.value = false;
+  
+  // Re-analizar contraste después de restaurar
+  setTimeout(() => {
+    analyzePaletteContrast();
+    updateContrastMetrics(); // Actualizar métricas en tiempo real
+  }, 200);
+  
+  console.log('Contraste restaurado por defecto');
+}
+
+// Función para actualizar métricas de contraste en tiempo real
+function updateContrastMetrics() {
+  // Forzar re-renderizado de las métricas
+  const currentAnalysis = [...contrastAnalysis.value];
+  contrastAnalysis.value = [];
+  setTimeout(() => {
+    contrastAnalysis.value = currentAnalysis;
+  }, 100);
+}
+
+// Función para guardar tema original
+function saveOriginalTheme() {
+  const root = document.documentElement;
+  originalThemeColors.value = [
+    getComputedStyle(root).getPropertyValue('--theme-primary'),
+    getComputedStyle(root).getPropertyValue('--theme-secondary'),
+    getComputedStyle(root).getPropertyValue('--theme-tertiary'),
+    getComputedStyle(root).getPropertyValue('--theme-quaternary'),
+    getComputedStyle(root).getPropertyValue('--theme-quinary'),
+    getComputedStyle(root).getPropertyValue('--theme-border'),
+    getComputedStyle(root).getPropertyValue('--theme-senary'),
+    getComputedStyle(root).getPropertyValue('--theme-septenary')
+  ];
+  console.log('Tema original guardado');
+}
+
+// Función para restaurar tema original
+function restoreOriginalTheme() {
+  if (originalThemeColors.value.length > 0) {
+    const root = document.documentElement;
+    root.style.setProperty('--theme-primary', originalThemeColors.value[0]);
+    root.style.setProperty('--theme-secondary', originalThemeColors.value[1]);
+    root.style.setProperty('--theme-tertiary', originalThemeColors.value[2]);
+    root.style.setProperty('--theme-quaternary', originalThemeColors.value[3]);
+    root.style.setProperty('--theme-quinary', originalThemeColors.value[4]);
+    root.style.setProperty('--theme-border', originalThemeColors.value[5]);
+    root.style.setProperty('--theme-senary', originalThemeColors.value[6]);
+    root.style.setProperty('--theme-septenary', originalThemeColors.value[7]);
+    console.log('Tema original restaurado');
+  }
+}
+
+// Función para aplicar contraste a toda la aplicación
+function applyContrastToEntireApp() {
+  console.log('Aplicando contraste a toda la aplicación...');
+  
+  // Solo aplicar a elementos que no tienen tema aplicado
+  applyContrastToElementType('.color-hex, .color-rgb, .color-percentage', 'color-info');
+  applyContrastToElementType('.contrast-label, .contrast-ratio, .contrast-status', 'contrast-info');
+  applyContrastToElementType('.metric-value, .metric-label', 'metrics');
+  applyContrastToElementType('.theme-btn, .contrast-btn', 'action-buttons');
+  
+  console.log('Contraste aplicado a toda la aplicación');
+}
+
+// Función para aplicar contraste a un tipo de elemento
+function applyContrastToElementType(selector, type) {
+  const elements = document.querySelectorAll(selector);
+  elements.forEach(element => {
+    const backgroundColor = rgbToHex(getComputedStyle(element).backgroundColor);
+    if (backgroundColor && backgroundColor !== '#000000') {
+      const contrastColor = getOptimalTextColor(backgroundColor);
+      element.style.color = contrastColor;
+      console.log(`Aplicado contraste a ${type}:`, element.textContent?.substring(0, 20), 'Color:', contrastColor);
+    }
+  });
+}
+
+// Función mejorada para calcular el contraste de un color
+function getContrastColor(hexColor) {
+  return getOptimalTextColor(hexColor);
 }
 
 // Función para aplicar contraste a elementos visibles
@@ -397,41 +620,6 @@ function applyContrastToVisibleElements() {
   console.log('Mejoras de contraste aplicadas');
 }
 
-// Función para restaurar contraste por defecto
-function restoreDefaultContrast() {
-  console.log('Restaurando contraste por defecto...');
-  
-  // Restaurar todos los elementos que podrían haber sido modificados
-  const elementsToRestore = [
-    '.mode-btn',
-    '.analyzer-header h2',
-    '.analyzer-header p',
-    '.contrast-btn',
-    '.color-hex',
-    '.color-rgb',
-    '.color-percentage',
-    '.theme-btn',
-    '.contrast-label',
-    '.contrast-ratio',
-    '.contrast-status'
-  ];
-  
-  elementsToRestore.forEach(selector => {
-    const elements = document.querySelectorAll(selector);
-    elements.forEach(element => {
-      element.style.color = '';
-      console.log('Restaurado contraste de:', element.textContent || selector);
-    });
-  });
-  
-  console.log('Contraste restaurado por defecto');
-}
-
-// Función mejorada para calcular el contraste de un color
-function getContrastColor(hexColor) {
-  return getOptimalTextColor(hexColor);
-}
-
 const analyzeSelectedPokemon = async () => {
   if (!selectedPokemon.value) return
   
@@ -502,9 +690,10 @@ const extractColorsFromImageData = (imageData) => {
         lightness: hsl.l
       }
     })
+    .filter(color => color.percentage > 0.5) // Filtrar colores con porcentaje muy bajo
     .sort((a, b) => b.percentage - a.percentage)
   
-  // Improved color selection algorithm
+  // Improved color selection algorithm - solo devolver colores que realmente existen
   const selectedColors = selectDiverseColors(allColors, 8)
   
   return selectedColors
@@ -543,6 +732,7 @@ const rgbToHsl = (r, g, b) => {
 
 // Improved color selection algorithm
 const selectDiverseColors = (allColors, maxColors) => {
+  // Si hay menos colores que el máximo, devolver todos los disponibles
   if (allColors.length <= maxColors) {
     return allColors
   }
@@ -555,7 +745,7 @@ const selectDiverseColors = (allColors, maxColors) => {
   used.add(allColors[0].hex)
   
   // Then add colors that are most different from already selected ones
-  for (let i = 1; i < maxColors; i++) {
+  for (let i = 1; i < maxColors && i < allColors.length; i++) {
     let bestColor = null
     let maxDifference = -1
     
@@ -581,6 +771,9 @@ const selectDiverseColors = (allColors, maxColors) => {
     if (bestColor) {
       selected.push(bestColor)
       used.add(bestColor.hex)
+    } else {
+      // Si no encontramos un color diferente, parar aquí
+      break
     }
   }
   
@@ -618,24 +811,27 @@ const rgbToHexValues = (r, g, b) => {
 // Llamar a la función después de aplicar la paleta
 function applyPaletteAsTheme() {
   const root = document.documentElement;
+  // NO cambiar --theme-primary ni --theme-secondary aquí
   palette.value.forEach((color, idx) => {
     if (idx === 0) {
-      root.style.setProperty('--theme-primary', color.hex);
       root.style.setProperty('--theme-border', getBorderColor(color.hex));
     }
-    if (idx === 1) root.style.setProperty('--theme-secondary', color.hex);
-    if (idx === 2) root.style.setProperty('--theme-tertiary', color.hex);
-    if (idx === 3) root.style.setProperty('--theme-quaternary', color.hex);
-    if (idx === 4) root.style.setProperty('--theme-quinary', color.hex);
-    if (idx === 5) root.style.setProperty('--theme-senary', color.hex);
-    if (idx === 6) root.style.setProperty('--theme-septenary', color.hex);
-    if (idx === 7) root.style.setProperty('--theme-octonary', color.hex);
+    if (idx === 1) {
+      root.style.setProperty('--theme-tertiary', color.hex);
+    }
+    if (idx === 2) root.style.setProperty('--theme-quaternary', color.hex);
+    if (idx === 3) root.style.setProperty('--theme-quinary', color.hex);
+    if (idx === 4) root.style.setProperty('--theme-senary', color.hex);
+    if (idx === 5) root.style.setProperty('--theme-septenary', color.hex);
+    if (idx === 6) root.style.setProperty('--theme-octonary', color.hex);
+    if (idx === 7) root.style.setProperty('--theme-nonary', color.hex);
   });
-  // NO aplicar contraste automáticamente
+  console.log('Tema aplicado (sin cambiar fondo):', palette.value.map(c => c.hex));
 }
 
 function restoreDefaultTheme() {
   const root = document.documentElement;
+  // Restaurar colores por defecto SOLO si el usuario lo pide explícitamente
   root.style.setProperty('--theme-primary', defaultTheme[0]);
   root.style.setProperty('--theme-secondary', defaultTheme[1]);
   root.style.setProperty('--theme-tertiary', defaultTheme[2]);
@@ -645,10 +841,11 @@ function restoreDefaultTheme() {
   root.style.setProperty('--theme-senary', defaultTheme[6]);
   root.style.setProperty('--theme-septenary', defaultTheme[7]);
   root.style.setProperty('--theme-octonary', '#4a5568');
-  
   // Restaurar contraste por defecto
   restoreDefaultContrast();
 }
+
+// Solo restoreDefaultTheme puede cambiar --theme-primary y --theme-secondary
 </script>
 
 <style scoped>
@@ -670,6 +867,28 @@ function restoreDefaultTheme() {
   font-size: 2rem;
   font-weight: bold;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.header-info {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.info-icon {
+  font-size: 1.2rem;
+  color: #667eea;
+  cursor: help;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.info-icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  color: #4c51bf;
 }
 
 .analyzer-header p {
@@ -737,6 +956,127 @@ function restoreDefaultTheme() {
   font-size: 1.5rem;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.global-contrast-analysis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+  justify-items: center;
+  align-items: start;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.metric-card {
+  background: var(--theme-quinary);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--theme-border);
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  min-height: 180px;
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  color: var(--theme-quaternary);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.metric-icon {
+  font-size: 1.3em;
+}
+
+.metric-title {
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-size: 0.9rem;
+}
+
+.metric-value {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--theme-quaternary);
+  margin-bottom: 15px;
+  font-family: monospace;
+  line-height: 1;
+}
+
+.metric-bar {
+  height: 10px;
+  background: var(--theme-border);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.metric-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.metric-fill.excellent {
+  background: linear-gradient(90deg, #38a169 0%, #48bb78 100%);
+}
+
+.metric-fill.good {
+  background: linear-gradient(90deg, #f6e05e 0%, #f7fafc 100%);
+}
+
+.metric-fill.poor {
+  background: linear-gradient(90deg, #e53e3e 0%, #fc8181 100%);
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: var(--theme-senary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.palette-preview {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.theme-color-swatch {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 3px solid var(--theme-border);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.theme-color-swatch:hover {
+  transform: scale(1.3);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .contrast-results {
@@ -878,24 +1218,48 @@ function restoreDefaultTheme() {
 
 .contrast-actions {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   justify-content: center;
-  margin-top: 25px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
 .contrast-btn {
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: 14px 28px;
+  border-radius: 10px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   border: 2px solid var(--theme-border);
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.contrast-btn .btn-icon {
+  font-size: 1.2em;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.contrast-btn:hover .btn-icon {
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 .contrast-btn.improve {
-  background: var(--theme-primary);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
   color: var(--theme-tertiary);
   border-color: var(--theme-primary);
 }
@@ -907,28 +1271,128 @@ function restoreDefaultTheme() {
 }
 
 .contrast-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 .contrast-btn.improve:hover {
-  background: var(--theme-secondary);
+  background: linear-gradient(135deg, var(--theme-secondary) 0%, var(--theme-primary) 100%);
   border-color: var(--theme-secondary);
 }
 
 .contrast-btn.restore:hover {
   background: var(--theme-quaternary);
   color: var(--theme-tertiary);
+  border-color: var(--theme-quaternary);
 }
 
 @media (max-width: 768px) {
+  .pokemon-palette-analyzer {
+    padding: 10px;
+  }
+  
+  .analyzer-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .analyzer-header p {
+    font-size: 0.9rem;
+  }
+  
+  .mode-selector {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .mode-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  
   .contrast-actions {
     flex-direction: column;
     align-items: center;
+    gap: 16px;
+  }
+  
+  .contrast-btn {
+    min-width: 180px;
+    padding: 12px 24px;
+    font-size: 14px;
   }
   
   .contrast-results {
     grid-template-columns: 1fr;
+  }
+  
+  .global-contrast-analysis {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .metric-card {
+    padding: 20px;
+    min-height: 150px;
+  }
+  
+  .metric-value {
+    font-size: 2.5rem;
+  }
+  
+  .palette-display {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  
+  .color-item {
+    padding: 8px;
+  }
+  
+  .color-info {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pokemon-palette-analyzer {
+    padding: 5px;
+  }
+  
+  .analyzer-header h2 {
+    font-size: 1.3rem;
+  }
+  
+  .mode-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .contrast-btn {
+    min-width: 160px;
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+  
+  .metric-card {
+    padding: 15px;
+    min-height: 120px;
+  }
+  
+  .metric-value {
+    font-size: 2rem;
+  }
+  
+  .palette-display {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+  
+  .color-item {
+    padding: 6px;
+  }
+  
+  .color-info {
+    font-size: 0.7rem;
   }
 }
 </style> 

@@ -1,17 +1,22 @@
 <template>
   <div class="export-section">
+    <h3>Exportar Paleta <InfoTooltip text="Exporta la paleta de colores en diferentes formatos para uso en herramientas de diseño y desarrollo. Incluye opciones para CSS, Tailwind, Figma y JSON." size="medium" /></h3>
     <div class="export-buttons">
       <button @click="exportToCSS" class="export-btn css">
         Exportar CSS
+                  <InfoTooltip text="Genera variables CSS personalizadas con los colores de la paleta. Incluye códigos hexadecimales y RGB para uso directo en proyectos web." size="small" />
       </button>
       <button @click="exportToTailwind" class="export-btn tailwind">
         Exportar Tailwind
+                  <InfoTooltip text="Genera configuración de colores para Tailwind CSS. Incluye definiciones de colores personalizados para agregar a tu archivo tailwind.config.js." size="small" />
       </button>
       <button @click="exportToFigma" class="export-btn figma">
         Exportar Figma
+                  <InfoTooltip text="Genera un archivo de colores compatible con Figma. Incluye códigos de color en formato que puede ser importado directamente en proyectos de Figma." size="small" />
       </button>
       <button @click="exportToJSON" class="export-btn json">
         Exportar JSON
+                  <InfoTooltip text="Genera un archivo JSON con toda la información de la paleta. Incluye códigos hexadecimales, RGB, porcentajes y metadatos para uso en aplicaciones de desarrollo." size="small" />
       </button>
     </div>
     
@@ -31,6 +36,7 @@
 <script setup>
 import { ref } from 'vue'
 import { formatPokemonName } from '../utils/formatters.js'
+import InfoTooltip from './InfoTooltip.vue'
 
 // Props
 const props = defineProps({
@@ -125,6 +131,26 @@ const copyCode = async () => {
   color: var(--theme-quaternary);
   margin-bottom: 15px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.info-icon {
+  font-size: 1rem;
+  color: var(--theme-primary);
+  cursor: help;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  display: inline-block;
+  margin-left: 4px;
+}
+
+.info-icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  color: var(--theme-secondary);
 }
 
 .export-buttons {

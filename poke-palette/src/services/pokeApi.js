@@ -10,10 +10,25 @@ const BASE_URL = 'https://pokeapi.co/api/v2';
  */
 export const getPokemonList = async (limit = 151, offset = 0) => {
   try {
+    // Validar parámetros
+    if (limit < 1 || limit > 1000) {
+      throw new Error('El límite debe estar entre 1 y 1000');
+    }
+    
+    if (offset < 0) {
+      throw new Error('El offset no puede ser negativo');
+    }
+    
     const response = await fetch(`${BASE_URL}/pokemon?limit=${limit}&offset=${offset}`);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 404) {
+        throw new Error('No se encontraron Pokémon con los criterios especificados');
+      } else if (response.status === 429) {
+        throw new Error('Demasiadas solicitudes. Intenta de nuevo en unos momentos');
+      } else {
+        throw new Error(`Error del servidor: ${response.status}`);
+      }
     }
     
     const data = await response.json();
