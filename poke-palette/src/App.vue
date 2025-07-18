@@ -1,30 +1,76 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import PokemonPaletteAnalyzer from './components/PokemonPaletteAnalyzer.vue'
 </script>
 
 <template>
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+  <div class="app">
+
+    
+    <main>
+      <PokemonPaletteAnalyzer />
+    </main>
+    
+    <footer class="app-footer">
+      <p>Hecho con ❤️ para diseñadores y desarrolladores</p>
+    </footer>
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<style>
+:root {
+  --theme-primary: #667eea;
+  --theme-secondary: #764ba2;
+  --theme-tertiary: #ffffff;
+  --theme-quaternary: #2d3748;
+  --theme-quinary: #f7fafc;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+
+.app {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  display: flex;
+  flex-direction: column;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+
+.app-header {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--theme-tertiary);
+}
+
+.app-header h1 {
+  margin: 0 0 10px 0;
+  font-size: 3.5rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.app-header p {
+  margin: 0;
+  font-size: 1.3rem;
+  opacity: 0.9;
+}
+
+main {
+  flex: 1;
+  padding: 20px;
+}
+
+.app-footer {
+  text-align: center;
+  padding: 20px;
+  color: var(--theme-tertiary);
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .app-header h1 {
+    font-size: 2.5rem;
+  }
+  
+  .app-header p {
+    font-size: 1.1rem;
+  }
 }
 </style>
