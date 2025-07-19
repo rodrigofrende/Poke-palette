@@ -4,12 +4,9 @@ import PokemonPaletteAnalyzer from './components/PokemonPaletteAnalyzer.vue'
 
 <template>
   <div class="app">
-
-    
     <main>
       <PokemonPaletteAnalyzer />
     </main>
-    
     <footer class="app-footer">
       <p>Hecho con ❤️ para diseñadores y desarrolladores</p>
     </footer>

@@ -13,19 +13,7 @@
       <div class="search-icon">🔍</div>
     </div>
     
-    <!-- Shiny toggle -->
-    <div class="shiny-toggle">
-      <label class="toggle-label">
-        <input 
-          :checked="isShiny"
-          @change="$emit('update-shiny', $event.target.checked)"
-          type="checkbox" 
-          class="toggle-input"
-        />
-        <span class="toggle-slider"></span>
-        <span class="toggle-text">✨ Shiny</span>
-      </label>
-    </div>
+
     
     <!-- Search results with animations -->
     <TransitionGroup 
@@ -233,72 +221,7 @@ const selectPokemon = (pokemon) => {
   color: #4a5568;
 }
 
-.shiny-toggle {
-  text-align: center;
-  margin-bottom: 20px;
-  background: #ffffff;
-  padding: 15px 25px;
-  border-radius: 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e2e8f0;
-  display: inline-block;
-}
 
-.toggle-label {
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  font-weight: 600;
-  color: #2d3748;
-  font-size: 16px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.toggle-input {
-  display: none;
-}
-
-.toggle-slider {
-  position: relative;
-  width: 60px;
-  height: 30px;
-  background: #f7fafc;
-  border-radius: 15px;
-  margin-right: 15px;
-  transition: all 0.3s ease;
-  border: 2px solid #e2e8f0;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.toggle-slider:before {
-  content: '';
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  background: var(--theme-tertiary);
-  border-radius: 50%;
-  top: 1px;
-  left: 1px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.toggle-input:checked + .toggle-slider {
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
-  border-color: var(--theme-primary);
-}
-
-.toggle-input:checked + .toggle-slider:before {
-  transform: translateX(30px);
-  background: var(--theme-tertiary);
-}
-
-.toggle-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: #2d3748;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
 
 .search-results {
   max-width: 500px;

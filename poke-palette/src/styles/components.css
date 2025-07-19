@@ -6,12 +6,15 @@
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 0.9em;
   cursor: pointer;
   border: 2px solid var(--theme-border);
   transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  line-height: 1.4;
 }
 
 .btn:hover {
@@ -38,6 +41,7 @@
   border: 2px solid var(--theme-border);
   border-radius: 8px;
   font-size: 16px;
+  font-family: var(--font-body);
   transition: all 0.3s ease;
   background: var(--theme-tertiary);
   color: var(--theme-quaternary);
@@ -64,12 +68,15 @@
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: 500;
+  font-family: var(--font-body);
+  font-size: 0.8em;
   text-transform: capitalize;
   transition: all 0.3s ease;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  line-height: 1.4;
 }
 
 .badge:hover {

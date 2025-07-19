@@ -30,8 +30,23 @@
           </div>
         </div>
         
-        <!-- Botón de acción en el espacio libre -->
+        <!-- Controles en el espacio libre -->
         <div class="controls-container">
+          <!-- Shiny toggle -->
+          <div class="shiny-toggle-compact">
+            <label class="toggle-label-compact">
+              <input 
+                :checked="isShiny"
+                @change="$emit('update-shiny', $event.target.checked)"
+                type="checkbox" 
+                class="toggle-input-compact"
+              />
+              <span class="toggle-slider-compact"></span>
+              <span class="toggle-text-compact">✨ Shiny</span>
+            </label>
+          </div>
+          
+          <!-- Botón de análisis -->
           <button @click="$emit('analyze')" class="analyze-btn-compact">
             <span class="btn-icon-small">🎨</span>
             Analizar Paleta
@@ -39,75 +54,91 @@
         </div>
       </div>
       
-      <div class="pokemon-content">
-        <!-- Información física -->
-        <div class="pokemon-physical-info">
-          <h4>Información Física</h4>
-          <div class="physical-grid">
-            <div class="physical-item">
-              <span class="physical-label">Altura:</span>
-              <span class="physical-value">{{ (pokemon.height / 10).toFixed(1) }} m</span>
+      <!-- Navegación de secciones -->
+      <div class="section-navigation">
+        <button 
+          v-for="section in sections" 
+          :key="section.id"
+          @click="setActiveSection(section.id)"
+          :class="['nav-btn', { active: activeSection === section.id }]"
+        >
+          <span class="nav-icon">{{ section.icon }}</span>
+          <span class="nav-text">{{ section.title }}</span>
+        </button>
+      </div>
+      
+      <!-- Contenido dinámico basado en sección activa -->
+      <div class="section-content">
+        <!-- Información General -->
+        <div v-if="activeSection === 'info'" class="section-panel">
+          <div class="pokemon-info-container">
+            <!-- Información Física -->
+            <div class="info-section">
+              <h4>📏 Información Física</h4>
+              <div class="physical-grid">
+                <div class="physical-item">
+                  <span class="physical-label">Altura:</span>
+                  <span class="physical-value">{{ (pokemon.height / 10).toFixed(1) }} m</span>
+                </div>
+                <div class="physical-item">
+                  <span class="physical-label">Peso:</span>
+                  <span class="physical-value">{{ (pokemon.weight / 10).toFixed(1) }} kg</span>
+                </div>
+                <div class="physical-item">
+                  <span class="physical-label">Color base:</span>
+                  <span class="physical-value">{{ formatColorName(pokemon.species?.color?.name) }}</span>
+                </div>
+                <div class="physical-item">
+                  <span class="physical-label">Forma:</span>
+                  <span class="physical-value">{{ formatShapeName(pokemon.species?.shape?.name) }}</span>
+                </div>
+              </div>
             </div>
-            <div class="physical-item">
-              <span class="physical-label">Peso:</span>
-              <span class="physical-value">{{ (pokemon.weight / 10).toFixed(1) }} kg</span>
-            </div>
-            <div class="physical-item">
-              <span class="physical-label">Color base:</span>
-              <span class="physical-value">{{ formatColorName(pokemon.species?.color?.name) }}</span>
-            </div>
-            <div class="physical-item">
-              <span class="physical-label">Forma:</span>
-              <span class="physical-value">{{ formatShapeName(pokemon.species?.shape?.name) }}</span>
+            
+            <!-- Descripción -->
+            <div class="info-section" v-if="pokemon.species?.flavor_text_entries">
+              <h4>📖 Descripción</h4>
+              <p class="description-text">
+                {{ getSpanishDescription(pokemon.species.flavor_text_entries) }}
+              </p>
             </div>
           </div>
         </div>
         
-        <!-- Descripción -->
-        <div class="pokemon-description" v-if="pokemon.species?.flavor_text_entries">
-          <h4>Descripción</h4>
-          <p class="description-text">
-            {{ getSpanishDescription(pokemon.species.flavor_text_entries) }}
-          </p>
-        </div>
-        
-
-      </div>
-      
-      <!-- Galería de imágenes adicionales -->
-      <div class="pokemon-gallery" v-if="Object.keys(groupedImages).length > 0">
-        <div class="gallery-header" @click="toggleGallery">
-          <h4>🎨 Galería de Sprites</h4>
-          <span class="toggle-icon">{{ isGalleryOpen ? '−' : '+' }}</span>
-        </div>
-        
-        <div class="gallery-categories" v-if="isGalleryOpen">
-          <div 
-            v-for="(images, category) in groupedImages" 
-            :key="category"
-            class="gallery-category"
-          >
-            <div class="category-header" @click="toggleCategory(category)">
-              <h5 class="category-title">{{ category }}</h5>
-              <span class="category-toggle">{{ openCategories.includes(category) ? '−' : '+' }}</span>
-            </div>
-            <div class="gallery-grid" v-if="openCategories.includes(category)">
+        <!-- Galería de imágenes -->
+        <div v-if="activeSection === 'gallery'" class="section-panel">
+          <div class="pokemon-gallery" v-if="Object.keys(groupedImages).length > 0">
+            <h4>🎨 Galería de Sprites</h4>
+            
+            <div class="gallery-categories">
               <div 
-                v-for="(image, index) in images" 
-                :key="`${category}-${index}`"
-                class="gallery-item"
-                @click="selectImage(image)"
+                v-for="(images, category) in groupedImages" 
+                :key="category"
+                class="gallery-category"
               >
-                <div class="gallery-image-container">
-                  <img 
-                    :src="image.url" 
-                    :alt="`${formatPokemonName(pokemon.name)} - ${image.name}`"
-                    class="gallery-image"
-                    loading="lazy"
-                    @error="handleImageError"
-                  />
-                  <div class="gallery-overlay">
-                    <span class="gallery-label">{{ image.name }}</span>
+                <div class="category-header" @click="toggleCategory(category)">
+                  <h5 class="category-title">{{ category }}</h5>
+                  <span class="category-toggle">{{ openCategories.includes(category) ? '−' : '+' }}</span>
+                </div>
+                <div class="gallery-grid" v-if="openCategories.includes(category)">
+                  <div 
+                    v-for="(image, index) in images" 
+                    :key="`${category}-${index}`"
+                    class="gallery-item"
+                    @click="selectImage(image)"
+                  >
+                    <div class="gallery-image-container">
+                      <img 
+                        :src="image.url" 
+                        :alt="`${formatPokemonName(pokemon.name)} - ${image.name}`"
+                        class="gallery-image"
+                        loading="lazy"
+                        @error="handleImageError"
+                      />
+                      <div class="gallery-overlay">
+                        <span class="gallery-label">{{ image.name }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -143,12 +174,18 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['analyze', 'image-selected', 'close'])
+const emit = defineEmits(['analyze', 'image-selected', 'close', 'update-shiny'])
 
 // Reactive data
 const selectedImage = ref(null)
-const isGalleryOpen = ref(false)
-const openCategories = ref([]) // Will be set dynamically based on available categories
+const openCategories = ref([])
+const activeSection = ref('info') // Sección por defecto
+
+// Definición de secciones
+const sections = [
+  { id: 'info', title: 'Información', icon: '📋' },
+  { id: 'gallery', title: 'Galería', icon: '🎨' }
+]
 
 // Computed properties
 const pokemonImages = computed(() => {
@@ -315,6 +352,10 @@ const groupedImages = computed(() => {
 })
 
 // Methods
+const setActiveSection = (sectionId) => {
+  activeSection.value = sectionId
+}
+
 const selectImage = (image) => {
   selectedImage.value = image
   emit('image-selected', image)
@@ -337,10 +378,6 @@ const handleImageError = (event) => {
   }
 }
 
-const toggleGallery = () => {
-  isGalleryOpen.value = !isGalleryOpen.value
-}
-
 // Watcher to set first available category as open by default
 watch(groupedImages, (newGroups) => {
   const availableCategories = Object.keys(newGroups)
@@ -350,11 +387,13 @@ watch(groupedImages, (newGroups) => {
 }, { immediate: true })
 
 const toggleCategory = (category) => {
-  const index = openCategories.value.indexOf(category)
-  if (index > -1) {
-    openCategories.value.splice(index, 1)
+  // Solo permite una categoría abierta a la vez
+  if (openCategories.value.includes(category)) {
+    // Si la categoría está abierta, la cierra
+    openCategories.value = []
   } else {
-    openCategories.value.push(category)
+    // Si está cerrada, abre solo esta categoría
+    openCategories.value = [category]
   }
 }
 </script>
@@ -369,10 +408,10 @@ const toggleCategory = (category) => {
 .pokemon-card {
   display: flex;
   flex-direction: column;
-  gap: 25px;
+  gap: 15px;
   background: var(--theme-tertiary);
-  padding: 35px;
-  border-radius: 25px;
+  padding: 20px;
+  border-radius: 20px;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
   margin-bottom: 20px;
   max-width: 800px;
@@ -413,15 +452,15 @@ const toggleCategory = (category) => {
   justify-content: center;
   width: 100%;
   height: 100%;
-  margin-top: -2px; /* Ajuste fino para centrado vertical perfecto */
+  margin-top: -2px;
 }
 
 .pokemon-header {
   display: flex;
   align-items: center;
-  gap: 25px;
-  margin-bottom: 25px;
-  padding: 0 10px;
+  gap: 20px;
+  margin-bottom: 15px;
+  padding: 0 5px;
 }
 
 .pokemon-image-container {
@@ -431,8 +470,8 @@ const toggleCategory = (category) => {
 }
 
 .pokemon-image {
-  width: 180px;
-  height: 180px;
+  width: 160px;
+  height: 160px;
   object-fit: contain;
   border-radius: 20px;
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-quinary) 100%);
@@ -444,25 +483,6 @@ const toggleCategory = (category) => {
 .pokemon-image:hover {
   transform: scale(1.05);
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
-}
-
-.shiny-indicator {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  background: var(--theme-secondary);
-  color: var(--theme-tertiary);
-  padding: 6px 10px;
-  border-radius: 18px;
-  font-size: 14px;
-  font-weight: bold;
-  animation: sparkle 2s infinite;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-@keyframes sparkle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
 }
 
 .pokemon-basic-info {
@@ -479,11 +499,83 @@ const toggleCategory = (category) => {
 /* Controles compactos */
 .controls-container {
   display: flex;
+  flex-direction: column;
+  gap: 15px;
   align-items: center;
   justify-content: center;
   min-width: 160px;
   flex-shrink: 0;
   margin-left: 20px;
+  padding: 15px;
+  background: var(--theme-quinary);
+  border-radius: 12px;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  min-height: 120px;
+}
+
+/* Shiny toggle compacto */
+.shiny-toggle-compact {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.toggle-label-compact {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--theme-quaternary);
+}
+
+.toggle-input-compact {
+  display: none;
+}
+
+.toggle-slider-compact {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background: var(--theme-border);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.toggle-slider-compact::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--theme-tertiary);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-input-compact:checked + .toggle-slider-compact {
+  background: var(--theme-primary);
+}
+
+.toggle-input-compact:checked + .toggle-slider-compact::before {
+  transform: translateX(20px);
+}
+
+.toggle-text-compact {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--theme-quaternary);
+  transition: color 0.3s ease;
+}
+
+.toggle-input-compact:checked ~ .toggle-text-compact {
+  color: var(--theme-primary);
 }
 
 .analyze-btn-compact {
@@ -557,59 +649,135 @@ const toggleCategory = (category) => {
   margin-top: 8px;
 }
 
-.pokemon-content {
+/* Navegación de secciones */
+.section-navigation {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--theme-quinary);
+  border: 2px solid var(--theme-border);
+  border-radius: 10px;
+  color: var(--theme-quaternary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  min-width: 100px;
+  justify-content: center;
+}
+
+.nav-btn:hover {
+  background: var(--theme-primary);
+  color: var(--theme-tertiary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.nav-btn.active {
+  background: var(--theme-primary);
+  color: var(--theme-tertiary);
+  border-color: var(--theme-primary);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.nav-icon {
+  font-size: 16px;
+}
+
+.nav-text {
+  font-size: 13px;
+}
+
+/* Contenido de secciones */
+.section-content {
+  min-height: 150px;
+}
+
+/* Contenedor de información agrupada */
+.pokemon-info-container {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  margin-top: 20px;
+}
+
+.info-section {
+  background: var(--theme-quinary);
+  border-radius: 12px;
+  padding: 15px;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.section-panel {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .pokemon-physical-info,
 .pokemon-description,
-.pokemon-evolution {
+.pokemon-gallery {
   margin: 0;
 }
 
 .pokemon-physical-info h4,
 .pokemon-description h4,
-.pokemon-evolution h4 {
+.pokemon-gallery h4,
+.info-section h4 {
   margin: 0 0 12px 0;
   color: var(--theme-quaternary);
   font-size: 1.2rem;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.physical-grid,
-.evolution-info {
+.physical-grid {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
 }
 
-.physical-item,
-.evolution-item {
+.physical-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 18px;
-  background: var(--theme-quinary);
-  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--theme-tertiary);
+  border-radius: 8px;
   border: 1px solid var(--theme-border);
   color: var(--theme-quaternary);
   font-weight: 500;
   transition: all 0.3s ease;
-  min-height: 44px;
+  min-height: 45px;
 }
 
-.physical-item:hover,
-.evolution-item:hover {
+.physical-item:hover {
   transform: translateX(5px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.physical-label,
-.evolution-label {
+.physical-label {
   font-size: 0.95rem;
   color: var(--theme-quaternary);
   font-weight: 600;
@@ -619,8 +787,7 @@ const toggleCategory = (category) => {
   min-width: 0;
 }
 
-.physical-value,
-.evolution-value {
+.physical-value {
   font-size: 0.95rem;
   color: var(--theme-quaternary);
   font-weight: 700;
@@ -632,83 +799,22 @@ const toggleCategory = (category) => {
 
 .description-text {
   padding: 15px;
-  background: var(--theme-quinary);
-  border-radius: 12px;
+  background: var(--theme-tertiary);
+  border-radius: 8px;
   border: 1px solid var(--theme-border);
   font-size: 0.95rem;
   line-height: 1.6;
   color: var(--theme-quaternary);
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
   width: 100%;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.analyze-btn {
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
-  color: var(--theme-tertiary);
-  border: 2px solid var(--theme-border);
-  padding: 12px 20px;
-  border-radius: 12px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.analyze-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-  border-color: var(--theme-primary);
-}
-
-.btn-icon {
-  font-size: 18px;
-}
-
-.pokemon-gallery {
-  border-top: 2px solid var(--theme-border);
-  padding-top: 25px;
-}
-
-.gallery-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  padding: 10px 0;
-  transition: all 0.3s ease;
-}
-
-.gallery-header:hover {
-  color: var(--theme-primary);
-}
-
-.gallery-header h4 {
-  margin: 0;
-  color: var(--theme-quaternary);
-  font-size: 1.4rem;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.toggle-icon {
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--theme-primary);
 }
 
 .gallery-categories {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  margin-top: 20px;
   width: 100%;
 }
 
@@ -809,7 +915,7 @@ const toggleCategory = (category) => {
 
 @media (max-width: 768px) {
   .pokemon-card {
-    padding: 20px;
+    padding: 15px;
     margin: 0 10px;
     max-width: 100%;
   }
@@ -847,6 +953,16 @@ const toggleCategory = (category) => {
     min-width: 160px;
   }
   
+  .section-navigation {
+    gap: 6px;
+  }
+  
+  .nav-btn {
+    padding: 8px 14px;
+    min-width: 90px;
+    font-size: 12px;
+  }
+  
   .gallery-grid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 12px;
@@ -863,7 +979,7 @@ const toggleCategory = (category) => {
 
 @media (max-width: 480px) {
   .pokemon-card {
-    padding: 15px;
+    padding: 12px;
     margin: 0 5px;
   }
   
@@ -881,6 +997,16 @@ const toggleCategory = (category) => {
     min-width: 140px;
   }
   
+  .section-navigation {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .nav-btn {
+    width: 100%;
+    min-width: auto;
+  }
+  
   .gallery-grid {
     grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     gap: 8px;
@@ -894,9 +1020,8 @@ const toggleCategory = (category) => {
     padding: 12px;
   }
   
-  .physical-item,
-  .evolution-item {
-    padding: 10px 15px;
+  .physical-item {
+    padding: 10px 14px;
     min-height: 40px;
   }
 }
@@ -922,12 +1047,12 @@ const toggleCategory = (category) => {
   animation: fadeInUp 0.8s ease-out 0.2s both;
 }
 
-.pokemon-content {
-  animation: fadeInUp 0.8s ease-out 0.4s both;
+.section-navigation {
+  animation: fadeInUp 0.8s ease-out 0.3s both;
 }
 
-.pokemon-gallery {
-  animation: fadeInUp 0.8s ease-out 0.6s both;
+.section-content {
+  animation: fadeInUp 0.8s ease-out 0.4s both;
 }
 
 @keyframes fadeInUp {
@@ -940,5 +1065,4 @@ const toggleCategory = (category) => {
     transform: translateY(0);
   }
 }
-
 </style> 

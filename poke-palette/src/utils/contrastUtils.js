@@ -49,28 +49,59 @@ export function rgbToHex(color) {
  * @returns {number} Luminancia relativa (0-1)
  */
 export function calculateLuminance(color) {
-  // Convertir a hexadecimal si es necesario
-  const hexColor = color.startsWith('#') ? color : rgbToHex(color);
-  
-  // Validar que hexColor sea un string y tenga el formato correcto
-  if (typeof hexColor !== 'string' || !hexColor.startsWith('#')) {
-    console.warn('Invalid hex color format:', hexColor);
+  // Validar que el color sea un string válido
+  if (typeof color !== 'string' || !color) {
+    console.warn('Invalid color format:', color);
     return 0.5; // Valor por defecto
   }
   
-  const r = parseInt(hexColor.slice(1, 3), 16);
-  const g = parseInt(hexColor.slice(3, 5), 16);
-  const b = parseInt(hexColor.slice(5, 7), 16);
-  
-  const rsRGB = r / 255;
-  const gsRGB = g / 255;
-  const bsRGB = b / 255;
-  
-  const rsRGB_linear = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
-  const gsRGB_linear = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
-  const bsRGB_linear = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
-  
-  return 0.2126 * rsRGB_linear + 0.7152 * gsRGB_linear + 0.0722 * bsRGB_linear;
+  try {
+    // Convertir a hexadecimal si es necesario
+    const hexColor = color.startsWith('#') ? color : rgbToHex(color);
+    
+    // Validar que hexColor sea un string y tenga el formato correcto
+    if (typeof hexColor !== 'string' || !hexColor.startsWith('#')) {
+      console.warn('Invalid hex color format:', hexColor);
+      return 0.5; // Valor por defecto
+    }
+    
+    // Validar que el color hexadecimal tenga el formato correcto (#RRGGBB)
+    if (!/^#[0-9A-Fa-f]{6}$/.test(hexColor)) {
+      console.warn('Invalid hex color format (should be #RRGGBB):', hexColor);
+      return 0.5; // Valor por defecto
+    }
+    
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    
+    // Validar que los valores RGB sean números válidos
+    if (isNaN(r) || isNaN(g) || isNaN(b)) {
+      console.warn('Invalid RGB values:', { r, g, b, hexColor });
+      return 0.5; // Valor por defecto
+    }
+    
+    const rsRGB = r / 255;
+    const gsRGB = g / 255;
+    const bsRGB = b / 255;
+    
+    const rsRGB_linear = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
+    const gsRGB_linear = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
+    const bsRGB_linear = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
+    
+    const luminance = 0.2126 * rsRGB_linear + 0.7152 * gsRGB_linear + 0.0722 * bsRGB_linear;
+    
+    // Validar que la luminancia sea un número válido
+    if (isNaN(luminance) || !isFinite(luminance)) {
+      console.warn('Invalid luminance calculated:', luminance);
+      return 0.5; // Valor por defecto
+    }
+    
+    return luminance;
+  } catch (error) {
+    console.error('Error calculating luminance:', error);
+    return 0.5; // Valor por defecto
+  }
 }
 
 /**
@@ -86,13 +117,44 @@ export function calculateContrastRatio(color1, color2) {
     return 1; // Valor por defecto
   }
   
-  const lum1 = calculateLuminance(color1);
-  const lum2 = calculateLuminance(color2);
+  // Validar que los colores no estén vacíos
+  if (!color1 || !color2) {
+    console.warn('Empty color values:', { color1, color2 });
+    return 1; // Valor por defecto
+  }
   
-  const lighter = Math.max(lum1, lum2);
-  const darker = Math.min(lum1, lum2);
-  
-  return (lighter + 0.05) / (darker + 0.05);
+  try {
+    const lum1 = calculateLuminance(color1);
+    const lum2 = calculateLuminance(color2);
+    
+    // Validar que las luminancias sean números válidos
+    if (isNaN(lum1) || isNaN(lum2)) {
+      console.warn('Invalid luminance values:', { lum1, lum2, color1, color2 });
+      return 1; // Valor por defecto
+    }
+    
+    const lighter = Math.max(lum1, lum2);
+    const darker = Math.min(lum1, lum2);
+    
+    // Evitar división por cero
+    if (darker + 0.05 === 0) {
+      console.warn('Division by zero in contrast calculation');
+      return 1; // Valor por defecto
+    }
+    
+    const ratio = (lighter + 0.05) / (darker + 0.05);
+    
+    // Validar que el ratio sea un número válido
+    if (isNaN(ratio) || !isFinite(ratio)) {
+      console.warn('Invalid contrast ratio calculated:', ratio);
+      return 1; // Valor por defecto
+    }
+    
+    return ratio;
+  } catch (error) {
+    console.error('Error calculating contrast ratio:', error);
+    return 1; // Valor por defecto
+  }
 }
 
 /**

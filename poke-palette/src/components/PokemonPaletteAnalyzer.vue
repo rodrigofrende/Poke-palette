@@ -1,200 +1,360 @@
 <template>
   <div class="pokemon-palette-analyzer">
+    <!-- Header compacto -->
     <div class="analyzer-header">
       <h1>Analizador de Paletas Pokémon <InfoTooltip text="Extrae y analiza las paletas de colores de imágenes de Pokémon. Esta herramienta identifica los colores dominantes y crea paletas profesionales para uso en diseño gráfico y desarrollo web." size="large" /></h1>
       <p>Selecciona un Pokémon o sube tu propia imagen para extraer su paleta de colores</p>
-
     </div>
     
-    <!-- Mode selector -->
-    <div class="mode-selector">
-      <button 
-        @click="mode = 'api'"
-        :class="{ active: mode === 'api' }"
-        class="mode-btn"
-      >
-        🎯 Seleccionar Pokémon
-      </button>
-      <button 
-        @click="mode = 'upload'"
-        :class="{ active: mode === 'upload' }"
-        class="mode-btn"
-      >
-        📷 Subir Imagen
-      </button>
-    </div>
-    
-    <!-- API Mode -->
-    <div v-if="mode === 'api'" class="api-mode">
-      <PokemonSearch 
-        :is-shiny="isShiny"
-        @select-pokemon="selectPokemonFromAPI"
-        @update-shiny="updateShiny"
-      />
-      
-      <PokemonCard 
-        v-if="selectedPokemon"
-        :pokemon="selectedPokemon"
-        :is-shiny="isShiny"
-        @analyze="analyzeSelectedPokemon"
-        @image-selected="handleImageSelected"
-        @close="closePokemonCard"
-      />
-    </div>
-    
-    <!-- Upload Mode -->
-    <div v-else class="upload-mode">
-      <ColorPaletteExtractor />
-    </div>
-    
-    <!-- Results -->
-    <ColorPalette 
-      v-if="palette.length > 0"
-      :palette="palette"
-      :pokemon-name="selectedPokemon ? formatPokemonName(selectedPokemon.name) : 'la imagen'"
-      @apply-theme="applyPaletteAsTheme"
-      @restore-theme="restoreDefaultTheme"
-    />
-    
-    <!-- Contrast Analysis Results -->
-    <div v-if="contrastAnalysis.length > 0" class="contrast-analysis-section">
-      <h3>
-        📊 Análisis de Contraste
-        <InfoTooltip text="Evalúa la legibilidad del texto sobre cada color de la paleta. Los resultados indican si el contraste cumple con los estándares de accesibilidad web. Los colores que aprueban son adecuados para uso en interfaces, mientras que los que fallan requieren ajustes para garantizar la legibilidad." size="medium" />
-      </h3>
-      
-      <!-- Global Contrast Analysis -->
-      <div class="global-contrast-analysis">
-        <h4>🎯 Análisis General de la Aplicación</h4>
-        <div class="contrast-metrics">
-          <div class="metric-card">
-            <div class="metric-header">
-              <span class="metric-icon">📊</span>
-              <span class="metric-title">Contraste Promedio</span>
-            </div>
-            <div class="metric-value">{{ globalContrastScore.toFixed(1) }}</div>
-            <div class="metric-bar">
-              <div 
-                class="metric-fill" 
-                :style="{ width: `${Math.min(globalContrastScore * 10, 100)}%` }"
-                :class="{ 'excellent': globalContrastScore >= 7, 'good': globalContrastScore >= 5 && globalContrastScore < 7, 'poor': globalContrastScore < 5 }"
-              ></div>
-            </div>
-            <div class="metric-label">{{ getContrastLabel(globalContrastScore) }}</div>
-          </div>
-          
-          <div class="metric-card">
-            <div class="metric-header">
-              <span class="metric-icon">✅</span>
-              <span class="metric-title">Elementos Aprobados</span>
-            </div>
-            <div class="metric-value">{{ passedElements }}/{{ totalElements }}</div>
-            <div class="metric-bar">
-              <div 
-                class="metric-fill" 
-                :style="{ width: `${(passedElements / totalElements) * 100}%` }"
-                :class="{ 'excellent': (passedElements / totalElements) >= 0.8, 'good': (passedElements / totalElements) >= 0.6 && (passedElements / totalElements) < 0.8, 'poor': (passedElements / totalElements) < 0.6 }"
-              ></div>
-            </div>
-            <div class="metric-label">{{ Math.round((passedElements / totalElements) * 100) }}% de aprobación</div>
-          </div>
-          
-          <div class="metric-card">
-            <div class="metric-header">
-              <span class="metric-icon">🎨</span>
-              <span class="metric-title">Paleta Actual</span>
-            </div>
-            <div class="metric-value">{{ currentThemeName }}</div>
-            <div class="palette-preview">
-              <div 
-                v-for="(color, index) in currentThemeColors" 
-                :key="index"
-                class="theme-color-swatch"
-                :style="{ backgroundColor: color }"
-                :title="color"
-              ></div>
-            </div>
-            <div class="metric-label">{{ palette.length }} colores extraídos</div>
-          </div>
+    <!-- Breadcrumb de progreso con controles -->
+    <div class="progress-breadcrumb">
+      <div class="breadcrumb-steps">
+        <div class="breadcrumb-step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+          <span class="step-number">1</span>
+          <span class="step-label">Buscar Pokémon</span>
+        </div>
+        <div class="breadcrumb-arrow" v-if="currentStep >= 2">→</div>
+        <div class="breadcrumb-step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+          <span class="step-number">2</span>
+          <span class="step-label">Generar Paleta</span>
+        </div>
+        <div class="breadcrumb-arrow" v-if="currentStep >= 3">→</div>
+        <div class="breadcrumb-step" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
+          <span class="step-number">3</span>
+          <span class="step-label">Analizar Contraste</span>
         </div>
       </div>
       
-      <div class="contrast-results">
-        <div 
-          v-for="(result, index) in contrastAnalysis" 
-          :key="index"
-          class="contrast-item"
+      <!-- Controles de navegación -->
+      <div class="breadcrumb-controls">
+        <!-- Botón de Mejorar Contraste (solo en paso 3) -->
+        <button 
+          v-if="currentStep === 3 && contrastAnalysis.length > 0" 
+          @click="improveGlobalContrast" 
+          class="improve-btn-compact"
         >
-          <div class="contrast-pair">
-            <div class="contrast-info">
-              <div class="color-labels">
-                <span class="contrast-label">
-                  <span class="label-icon">🎨</span>
-                  Fondo: 
-                  <span class="color-code">
-                    {{ result.background }}
-                    <div 
-                      class="color-sample background-sample" 
-                      :style="{ backgroundColor: result.background }"
-                      :title="`Fondo: ${result.background}`"
-                    ></div>
-                  </span>
-                </span>
-                <span class="contrast-label">
-                  <span class="label-icon">✏️</span>
-                  Texto: 
-                  <span class="color-code">
-                    {{ result.text }}
-                    <div 
-                      class="color-sample text-sample" 
-                      :style="{ backgroundColor: result.text }"
-                      :title="`Texto: ${result.text}`"
-                    ></div>
-                  </span>
-                </span>
+          🎯 Mejorar Contraste
+        </button>
+        
+        <!-- Botones de navegación -->
+        <div class="nav-controls">
+          <button 
+            v-if="currentStep > 1" 
+            @click="prevStep" 
+            class="nav-btn-compact back"
+          >
+            ← Anterior
+          </button>
+          <button 
+            v-if="currentStep < 3 && (selectedPokemon || palette.length > 0)" 
+            @click="nextStep" 
+            class="nav-btn-compact next"
+          >
+            Siguiente →
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Layout de dos columnas -->
+    <div class="main-layout">
+      <!-- Columna izquierda: Búsqueda y Análisis -->
+      <div class="left-column">
+        <!-- Paso 1: Búsqueda -->
+        <div v-if="currentStep === 1" class="step-content search-step">
+          <div v-if="!selectedPokemon" class="step-header">
+            <h2>🔍 Buscar Pokémon</h2>
+            <p>Selecciona un Pokémon de la base de datos o sube tu propia imagen</p>
+          </div>
+          
+          <!-- Contenido principal -->
+          <div class="main-content">
+            <!-- Buscador de Pokémon -->
+            <div v-if="!selectedPokemon" class="search-container">
+              <PokemonSearch 
+                :is-shiny="isShiny"
+                @select-pokemon="selectPokemonFromAPI"
+                @update-shiny="updateShiny"
+              />
+            </div>
+            
+            <!-- Tarjeta del Pokémon -->
+            <PokemonCard 
+              v-if="selectedPokemon"
+              :pokemon="selectedPokemon"
+              :is-shiny="isShiny"
+              @analyze="analyzeSelectedPokemon"
+              @image-selected="handleImageSelected"
+              @close="closePokemonCard"
+              @update-shiny="updateShiny"
+            />
+            
+            <!-- Extractor de paleta -->
+            <div v-if="!selectedPokemon" class="upload-section">
+              <ColorPaletteExtractor />
+            </div>
+          </div>
+          
+          <!-- Botón de continuar -->
+          <div class="step-actions" v-if="selectedPokemon || palette.length > 0">
+            <button @click="nextStep" class="continue-btn">
+              Continuar → Generar Paleta
+            </button>
+          </div>
+        </div>
+        
+        <!-- Paso 2: Generar Paleta -->
+        <div v-if="currentStep === 2" class="step-content palette-step">
+          <div class="step-header">
+            <h2>🎨 Generar Paleta</h2>
+            <p>Analiza la imagen y extrae los colores dominantes</p>
+          </div>
+          
+          <div v-if="palette.length > 0" class="palette-section">
+            <ColorPalette 
+              :palette="palette"
+              :pokemon-name="selectedPokemon ? formatPokemonName(selectedPokemon.name) : 'la imagen'"
+              @apply-theme="handleApplyTheme"
+              @restore-theme="handleRestoreTheme"
+            />
+            
+
+          </div>
+          
+          <div v-else class="empty-state">
+            <div class="empty-icon">🎨</div>
+            <h3>No hay paleta disponible</h3>
+            <p>Selecciona un Pokémon o sube una imagen para generar una paleta de colores</p>
+          </div>
+        </div>
+        
+        <!-- Paso 3: Análisis de Contraste -->
+        <div v-if="currentStep === 3" class="step-content analysis-step">
+          <div class="step-header">
+            <h2>📊 Análisis de Contraste</h2>
+            <p>Evalúa la legibilidad y accesibilidad de los colores</p>
+          </div>
+          
+          <div v-if="contrastAnalysis.length > 0" class="analysis-section">
+            <h3>
+              📊 Análisis de Contraste
+              <InfoTooltip text="Evalúa la legibilidad del texto sobre cada color de la paleta. Los resultados indican si el contraste cumple con los estándares de accesibilidad web. Los colores que aprueban son adecuados para uso en interfaces, mientras que los que fallan requieren ajustes para garantizar la legibilidad." size="medium" />
+            </h3>
+            
+            <!-- Hint intuitivo para el usuario -->
+            <div class="contrast-hint-inline">
+              <div class="hint-inline-content">
+                <span class="hint-inline-icon">💡</span>
+                <span class="hint-inline-text">¿Algunos textos se ven difíciles de leer? Usa el botón "Mejorar Contraste Global" para optimizar automáticamente la legibilidad</span>
               </div>
+            </div>
+            
+            <!-- Global Contrast Analysis -->
+            <div class="global-contrast-analysis">
+              <h4>🎯 Análisis General de la Aplicación</h4>
               <div class="contrast-metrics">
-                <span class="contrast-ratio">
-                  <span class="ratio-icon">📊</span>
-                  Ratio: {{ result.ratio.toFixed(2) }}
-                </span>
-                <span 
-                  class="contrast-status"
-                  :class="{ 'pass': result.passes, 'fail': !result.passes }"
+                <div class="metric-card">
+                  <div class="metric-header">
+                    <span class="metric-icon">📊</span>
+                    <span class="metric-title">Contraste Promedio</span>
+                  </div>
+                  <div class="metric-value">{{ globalContrastScore.toFixed(1) }}</div>
+                  <div class="metric-bar">
+                    <div 
+                      class="metric-fill" 
+                      :style="{ width: `${Math.min(globalContrastScore * 10, 100)}%` }"
+                      :class="{ 'excellent': globalContrastScore >= 7, 'good': globalContrastScore >= 5 && globalContrastScore < 7, 'poor': globalContrastScore < 5 }"
+                    ></div>
+                  </div>
+                  <div class="metric-label">{{ getContrastLabel(globalContrastScore) }}</div>
+                </div>
+                
+                <div class="metric-card">
+                  <div class="metric-header">
+                    <span class="metric-icon">✅</span>
+                    <span class="metric-title">Elementos Aprobados</span>
+                  </div>
+                  <div class="metric-value">{{ passedElements }}/{{ totalElements }}</div>
+                  <div class="metric-bar">
+                    <div 
+                      class="metric-fill" 
+                      :style="{ width: `${(passedElements / totalElements) * 100}%` }"
+                      :class="{ 'excellent': (passedElements / totalElements) >= 0.8, 'good': (passedElements / totalElements) >= 0.6 && (passedElements / totalElements) < 0.8, 'poor': (passedElements / totalElements) < 0.6 }"
+                    ></div>
+                  </div>
+                  <div class="metric-label">{{ Math.round((passedElements / totalElements) * 100) }}% de aprobación</div>
+                </div>
+                
+                <div class="metric-card">
+                  <div class="metric-header">
+                    <span class="metric-icon">🎨</span>
+                    <span class="metric-title">Paleta Actual</span>
+                  </div>
+                  <div class="metric-value">{{ currentThemeName }}</div>
+                  <div class="palette-preview">
+                    <div 
+                      v-for="(color, index) in currentThemeColors" 
+                      :key="index"
+                      class="theme-color-swatch"
+                      :style="{ backgroundColor: color }"
+                      :title="color"
+                    ></div>
+                  </div>
+                  <div class="metric-label">{{ palette.length }} colores extraídos</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Análisis de Contraste Compacto -->
+            <div class="contrast-analysis-compact">
+              <div class="analysis-summary">
+                <div class="summary-stats">
+                  <div class="stat-item">
+                    <span class="stat-icon">📊</span>
+                    <span class="stat-label">Colores Analizados</span>
+                    <span class="stat-value">{{ contrastAnalysis.length }}</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-icon">✅</span>
+                    <span class="stat-label">Aprobados</span>
+                    <span class="stat-value">{{ passedElements }}/{{ totalElements }}</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-icon">🎯</span>
+                    <span class="stat-label">Promedio</span>
+                    <span class="stat-value">{{ globalContrastScore.toFixed(1) }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="contrast-grid">
+                <div 
+                  v-for="(result, index) in contrastAnalysis" 
+                  :key="index"
+                  class="contrast-card"
                 >
-                  <span class="status-icon">{{ result.passes ? '✅' : '❌' }}</span>
-                  {{ result.passes ? 'Pasa' : 'Falla' }}
-                </span>
+                  <div class="card-header">
+                    <div class="color-swatch" :style="{ backgroundColor: result.background || '#ccc' }"></div>
+                    <div class="color-info">
+                      <span class="color-hex">{{ result.background || 'N/A' }}</span>
+                      <span class="color-index">#{{ index + 1 }}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="card-metrics">
+                    <div class="metric-row">
+                      <span class="metric-label">Blanco:</span>
+                      <span class="metric-value" :class="{ 'pass': result.whitePasses, 'fail': !result.whitePasses }">
+                        {{ result.whiteRatio ? result.whiteRatio.toFixed(1) : 'N/A' }}
+                      </span>
+                    </div>
+                    <div class="metric-row">
+                      <span class="metric-label">Negro:</span>
+                      <span class="metric-value" :class="{ 'pass': result.blackPasses, 'fail': !result.blackPasses }">
+                        {{ result.blackRatio ? result.blackRatio.toFixed(1) : 'N/A' }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div class="card-preview">
+                    <div class="preview-buttons">
+                      <button 
+                        class="preview-btn white"
+                        :style="{ 
+                          backgroundColor: result.background || '#ccc', 
+                          color: result.whiteText || '#fff' 
+                        }"
+                      >
+                        Blanco
+                      </button>
+                      <button 
+                        class="preview-btn black"
+                        :style="{ 
+                          backgroundColor: result.background || '#ccc', 
+                          color: result.blackText || '#000' 
+                        }"
+                      >
+                        Negro
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="card-status">
+                    <span class="status-icon" :class="{ 'pass': result.whitePasses || result.blackPasses, 'fail': !result.whitePasses && !result.blackPasses }">
+                      {{ (result.whitePasses || result.blackPasses) ? '✅' : '❌' }}
+                    </span>
+                    <span class="status-text">
+                      {{ (result.whitePasses || result.blackPasses) ? 'WCAG AA' : 'Falla' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else class="empty-state">
+            <div class="empty-icon">📊</div>
+            <h3>No hay análisis disponible</h3>
+            <p>Genera una paleta primero para poder analizar el contraste</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Columna derecha: Vista Previa -->
+      <div class="right-column">
+        <div class="preview-section">
+          <div class="preview-header">
+            <h3>Vista Previa</h3>
+            <p>Resultados en tiempo real</p>
+          </div>
+          
+          <div class="preview-content">
+            <div v-if="!selectedPokemon && palette.length === 0" class="preview-empty">
+              <div class="preview-icon">🎨</div>
+              <p>Selecciona un Pokémon para ver la vista previa</p>
+            </div>
+            
+            <div v-else-if="selectedPokemon" class="preview-pokemon">
+              <div class="preview-pokemon-card">
+                <img 
+                  :src="selectedPokemon.imageUrl" 
+                  :alt="selectedPokemon.name"
+                  class="preview-pokemon-image"
+                />
+                <div class="preview-pokemon-info">
+                  <h4>{{ formatPokemonName(selectedPokemon.name) }}</h4>
+                  <p>#{{ selectedPokemon.id }}</p>
+                  <div class="preview-types">
+                    <span 
+                      v-for="type in selectedPokemon.types" 
+                      :key="type.type.name"
+                      class="preview-type-badge"
+                    >
+                      {{ type.type.name }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else-if="palette.length > 0" class="preview-palette">
+              <h4>Paleta Generada</h4>
+              <div class="preview-palette-colors">
+                <div 
+                  v-for="(color, index) in palette" 
+                  :key="index"
+                  class="preview-color-swatch"
+                  :style="{ backgroundColor: color }"
+                  :title="color"
+                >
+                  <span class="color-hex">{{ color }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
-      <div class="contrast-actions">
-        <div class="button-container">
-          <button @click="applyContrastImprovements" class="contrast-btn improve">
-            <span class="btn-icon">🔧</span>
-            Mejorar Contraste Global
-          </button>
-          <InfoTooltip text="Optimiza automáticamente los colores del texto para mejorar la legibilidad sobre los fondos de colores. Aplica ajustes de contraste basados en estándares de accesibilidad web." size="small" />
-        </div>
-        <div class="button-container">
-          <button @click="restoreDefaultContrast" class="contrast-btn restore">
-            <span class="btn-icon">🔄</span>
-            Restaurar Contraste Original
-          </button>
-          <InfoTooltip text="Restaura todos los colores del texto a su configuración original. Revierte los cambios de contraste aplicados automáticamente." size="small" />
-        </div>
-      </div>
     </div>
-    
-    <ExportSection 
-      v-if="palette.length > 0"
-      :palette="palette"
-      :pokemon="selectedPokemon"
-      :is-shiny="isShiny"
-    />
   </div>
 </template>
 
@@ -206,7 +366,7 @@ import PokemonSearch from './PokemonSearch.vue'
 import PokemonCard from './PokemonCard.vue'
 import ColorPalette from './ColorPalette.vue'
 import ExportSection from './ExportSection.vue'
-import { formatPokemonName } from '../utils/formatters.js'
+import { formatPokemonName, formatColorName, formatShapeName, formatEggGroupName, getSpanishDescription } from '../utils/formatters.js'
 import { 
   getOptimalTextColor, 
   applyContrastToElement, 
@@ -216,50 +376,129 @@ import {
   rgbToHex
 } from '../utils/contrastUtils.js'
 import InfoTooltip from './InfoTooltip.vue'
+import TypeBadge from './TypeBadge.vue'
+import { 
+  applyTheme, 
+  restoreDefaultTheme, 
+  generateThemeFromPalette, 
+  improveThemeContrast,
+  getCurrentTheme 
+} from '../utils/themeManager.js'
+
+// Props
+const props = defineProps({
+  pokemon: {
+    type: Object,
+    required: true
+  },
+  isShiny: {
+    type: Boolean,
+    default: false
+  }
+})
+
+// Emits
+const emit = defineEmits(['analyze', 'image-selected', 'close', 'update-shiny'])
 
 // Reactive data
-const mode = ref('api')
 const selectedPokemon = ref(null)
 const palette = ref([])
 const isShiny = ref(false)
 const contrastAnalysis = ref([])
 const originalThemeColors = ref([])
 const isContrastApplied = ref(false)
+const currentStep = ref(1) // 1, 2, 3
+const selectedImage = ref(null)
+const openCategories = ref([])
+const activeSection = ref('physical') // Sección por defecto
+const currentTheme = ref(getCurrentTheme())
+const isContrastImproved = ref(false)
+
+// Watch for palette changes to enable next step
+watch(palette, (newPalette) => {
+  if (newPalette.length > 0 && currentStep.value === 1) {
+    // Enable step 2 when palette is generated
+    // Don't auto-navigate, let user control
+  }
+})
+
+// Watch for contrast analysis to enable next step
+watch(contrastAnalysis, (newAnalysis) => {
+  if (newAnalysis.length > 0 && currentStep.value === 2) {
+    // Enable step 3 when analysis is generated
+    // Don't auto-navigate, let user control
+  }
+})
 
 // Computed properties for global analysis
 const globalContrastScore = computed(() => {
   if (contrastAnalysis.value.length === 0) return 0
   
-  const totalRatio = contrastAnalysis.value.reduce((sum, result) => sum + result.ratio, 0)
-  const averageRatio = totalRatio / contrastAnalysis.value.length
+  // Calcular el promedio de todos los ratios (blanco y negro)
+  let totalRatio = 0
+  let totalCount = 0
+  
+  contrastAnalysis.value.forEach(result => {
+    if (typeof result.whiteRatio === 'number' && !isNaN(result.whiteRatio)) {
+      totalRatio += result.whiteRatio
+      totalCount++
+    }
+    if (typeof result.blackRatio === 'number' && !isNaN(result.blackRatio)) {
+      totalRatio += result.blackRatio
+      totalCount++
+    }
+  })
+  
+  if (totalCount === 0) return 0
+  
+  const averageRatio = totalRatio / totalCount
   
   // Convert ratio to a 0-10 scale
   return Math.min(averageRatio / 2, 10)
 })
 
 const passedElements = computed(() => {
-  return contrastAnalysis.value.filter(result => result.passes).length
+  let passedCount = 0
+  let totalCount = 0
+  
+  contrastAnalysis.value.forEach(result => {
+    if (typeof result.whitePasses === 'boolean') {
+      totalCount++
+      if (result.whitePasses) passedCount++
+    }
+    if (typeof result.blackPasses === 'boolean') {
+      totalCount++
+      if (result.blackPasses) passedCount++
+    }
+  })
+  
+  return passedCount
 })
 
 const totalElements = computed(() => {
-  return contrastAnalysis.value.length
+  let totalCount = 0
+  
+  contrastAnalysis.value.forEach(result => {
+    if (typeof result.whitePasses === 'boolean') totalCount++
+    if (typeof result.blackPasses === 'boolean') totalCount++
+  })
+  
+  return totalCount
 })
 
 const currentThemeName = computed(() => {
-  if (isContrastApplied.value) {
-    return 'Tema Optimizado'
-  } else if (palette.value.length > 0) {
-    return 'Tema Pokémon'
-  } else {
-    return 'Tema Original'
-  }
+  return isContrastImproved.value ? 'Tema Mejorado' : 'Tema Original'
 })
 
 const currentThemeColors = computed(() => {
-  if (palette.value.length > 0) {
-    return palette.value.map(color => color.hex)
-  }
-  return defaultTheme
+  const theme = currentTheme.value
+  return [
+    theme.primary,
+    theme.secondary,
+    theme.tertiary,
+    theme.quaternary,
+    theme.quinary
+  ].filter(Boolean)
 })
 
 // Methods
@@ -309,6 +548,9 @@ const closePokemonCard = () => {
   
   // Restaurar tema por defecto al cerrar
   restoreDefaultTheme()
+  
+  // Volver al tab de búsqueda
+  currentStep.value = 1
 }
 
 // Watcher para actualizar imagen cuando cambia shiny
@@ -384,17 +626,30 @@ onMounted(() => {
   }
 })
 
+// Inicializar tema al cargar
+onMounted(() => {
+  console.log('🔄 Restaurando tema por defecto al cargar la página...')
+  restoreDefaultTheme()
+  currentTheme.value = getCurrentTheme()
+  isContrastImproved.value = false
+})
+
 // Función para analizar contraste de la paleta
 function analyzePaletteContrast() {
+  console.log('🔍 Iniciando análisis de contraste...');
+  console.log('Paleta actual:', palette.value);
+  
   const analysis = [];
   
-  // Analizar cada color de la paleta contra texto blanco y negro
+  // Analizar cada color de la paleta con ambos tipos de texto
   palette.value.forEach((color, index) => {
     const background = color.hex;
     
+    console.log(`📊 Analizando color ${index + 1}:`, background);
+    
     // Validar que el color tenga el formato correcto
     if (!background || typeof background !== 'string' || !background.startsWith('#')) {
-      console.warn('Invalid color format in palette:', background);
+      console.warn('❌ Invalid color format in palette:', background);
       return; // Saltar este color
     }
     
@@ -403,68 +658,232 @@ function analyzePaletteContrast() {
     const whiteRatio = calculateContrastRatio(whiteText, background);
     const whiteCompliance = checkWCAGCompliance(whiteText, background);
     
-    analysis.push({
-      background,
-      text: whiteText,
-      ratio: whiteRatio,
-      passes: whiteCompliance.passes,
-      type: 'white-text'
-    });
+    console.log(`  📝 Texto blanco: ratio=${whiteRatio}, passes=${whiteCompliance.passes}`);
     
     // Test con texto negro
     const blackText = '#000000';
     const blackRatio = calculateContrastRatio(blackText, background);
     const blackCompliance = checkWCAGCompliance(blackText, background);
     
+    console.log(`  📝 Texto negro: ratio=${blackRatio}, passes=${blackCompliance.passes}`);
+    
+    // Crear un solo objeto que contenga ambos casos
     analysis.push({
       background,
-      text: blackText,
-      ratio: blackRatio,
-      passes: blackCompliance.passes,
-      type: 'black-text'
+      whiteText,
+      blackText,
+      whiteRatio,
+      blackRatio,
+      whitePasses: whiteCompliance.passes,
+      blackPasses: blackCompliance.passes,
+      colorIndex: index
     });
   });
   
+  console.log('✅ Análisis completado:', analysis);
   contrastAnalysis.value = analysis;
+  
+  // Don't auto-navigate, let user control the flow
 }
 
 // Función para aplicar mejoras de contraste global
-function applyContrastImprovements() {
+const applyContrastImprovements = () => {
   console.log('Aplicando mejoras de contraste global...');
   
-  // Guardar estado original si es la primera vez
-  if (!isContrastApplied.value) {
-    saveOriginalTheme();
+  try {
+    // Guardar estado original si es la primera vez
+    if (!isContrastApplied.value) {
+      saveOriginalTheme();
+    }
+    
+    // Analizar y mejorar contraste de elementos de texto
+    improveTextContrast();
+    
+    isContrastApplied.value = true;
+    
+    // Re-analizar contraste después de aplicar mejoras
+    setTimeout(() => {
+      analyzePaletteContrast();
+      updateContrastMetrics();
+    }, 200);
+    
+    console.log('✅ Mejoras de contraste aplicadas exitosamente');
+  } catch (error) {
+    console.error('❌ Error al aplicar mejoras de contraste:', error);
+  }
+}
+
+// Función para mejorar el contraste de textos analizando sus fondos
+const improveTextContrast = () => {
+  console.log('Analizando y mejorando contraste de textos...');
+  
+  // Selector más específico y completo para todos los elementos de texto
+  const textSelectors = [
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+    'p', 'span', 'div', 'button', 
+    '.color-hex', '.color-rgb', '.color-percentage', 
+    '.contrast-label', '.contrast-ratio', '.contrast-status', 
+    '.metric-value', '.metric-label', '.metric-title',
+    '.step-label', '.step-number',
+    '.preview-label', '.preview-stats',
+    '.status-text', '.sample-text',
+    '.btn-icon', '.label-icon', '.ratio-icon', '.status-icon',
+    '.metric-icon', '.empty-icon',
+    '.preview-color-hex',
+    '.analyzer-header h1', '.analyzer-header p',
+    '.step-header h2', '.step-header p',
+    '.preview-header h3', '.preview-header p',
+    '.preview-info h5', '.preview-info p',
+    '.empty-state h3', '.empty-state p',
+    '.preview-empty p'
+  ];
+  
+  // Combinar todos los selectores
+  const combinedSelector = textSelectors.join(', ');
+  const textElements = document.querySelectorAll(combinedSelector);
+  
+  console.log(`🔍 Encontrados ${textElements.length} elementos de texto para analizar`);
+  
+  textElements.forEach((element, index) => {
+    // Obtener el color de fondo del elemento o de su contenedor
+    let backgroundColor = getComputedStyle(element).backgroundColor;
+    
+    // Si el elemento es transparente, buscar el color de fondo del padre
+    if (backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
+      let parent = element.parentElement;
+      let depth = 0;
+      while (parent && (backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') && depth < 5) {
+        backgroundColor = getComputedStyle(parent).backgroundColor;
+        parent = parent.parentElement;
+        depth++;
+      }
+    }
+    
+    // Convertir a hexadecimal
+    const hexBackground = rgbToHex(backgroundColor);
+    
+    // Si tenemos un color de fondo válido, analizar el contraste actual
+    if (hexBackground && hexBackground !== '#000000' && hexBackground !== '#ffffff') {
+      const currentColor = getComputedStyle(element).color;
+      const currentRatio = calculateContrastRatio(currentColor, hexBackground);
+      
+      // Si el contraste actual es insuficiente (< 4.5), buscar un mejor color
+      if (currentRatio < 4.5) {
+        // Buscar el mejor color de la paleta para este fondo
+        const bestColor = findBestContrastColor(hexBackground);
+        if (bestColor) {
+          element.style.color = bestColor;
+          console.log(`✅ Mejorado contraste [${index}]: ${element.textContent?.substring(0, 30)} - Fondo: ${hexBackground}, Texto: ${bestColor}, Ratio: ${currentRatio.toFixed(2)}`);
+        }
+      } else {
+        console.log(`✅ Contraste adecuado [${index}]: ${element.textContent?.substring(0, 30)} - Ratio: ${currentRatio.toFixed(2)}`);
+      }
+    } else {
+      console.log(`⚠️ Sin fondo válido [${index}]: ${element.textContent?.substring(0, 30)}`);
+    }
+  });
+  
+  console.log('✅ Análisis de contraste completado');
+}
+
+// Función para encontrar el mejor color de contraste dentro de la paleta
+const findBestContrastColor = (backgroundColor) => {
+  if (!palette.value || palette.value.length === 0) {
+    // Si no hay paleta, usar blanco o negro según la luminancia
+    return getOptimalTextColor(backgroundColor);
   }
   
-  // Aplicar contraste a toda la aplicación
-  applyContrastToEntireApp();
+  let bestColor = null;
+  let bestRatio = 0;
   
-  isContrastApplied.value = true;
+  // Probar con blanco y negro primero
+  const whiteRatio = calculateContrastRatio('#ffffff', backgroundColor);
+  const blackRatio = calculateContrastRatio('#000000', backgroundColor);
   
-  // Re-analizar contraste después de aplicar mejoras
-  setTimeout(() => {
-    analyzePaletteContrast();
-    updateContrastMetrics(); // Actualizar métricas en tiempo real
-  }, 200);
+  if (whiteRatio > bestRatio) {
+    bestRatio = whiteRatio;
+    bestColor = '#ffffff';
+  }
+  
+  if (blackRatio > bestRatio) {
+    bestRatio = blackRatio;
+    bestColor = '#000000';
+  }
+  
+  // Probar con colores de la paleta que sean suficientemente diferentes del fondo
+  palette.value.forEach(color => {
+    if (color.hex && color.hex !== backgroundColor) {
+      const ratio = calculateContrastRatio(color.hex, backgroundColor);
+      if (ratio > bestRatio && ratio >= 4.5) {
+        bestRatio = ratio;
+        bestColor = color.hex;
+      }
+    }
+  });
+  
+  return bestColor || getOptimalTextColor(backgroundColor);
 }
 
 // Función para restaurar contraste por defecto
-function restoreDefaultContrast() {
+const restoreDefaultContrast = () => {
   console.log('Restaurando contraste por defecto...');
   
-  // Restaurar tema original
-  restoreOriginalTheme();
+  try {
+    // Solo restaurar colores de texto a su estado original
+    restoreOriginalTextColors();
+    
+    isContrastApplied.value = false;
+    
+    // Re-analizar contraste sin limpiar el análisis actual
+    setTimeout(() => {
+      analyzePaletteContrast();
+      updateContrastMetrics();
+    }, 200);
+    
+    console.log('✅ Contraste restaurado por defecto');
+  } catch (error) {
+    console.error('❌ Error al restaurar contraste:', error);
+  }
+}
+
+// Función para restaurar colores de texto originales
+const restoreOriginalTextColors = () => {
+  console.log('Restaurando colores de texto originales...');
   
-  isContrastApplied.value = false;
+  // Usar el mismo selector que en improveTextContrast
+  const textSelectors = [
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+    'p', 'span', 'div', 'button', 
+    '.color-hex', '.color-rgb', '.color-percentage', 
+    '.contrast-label', '.contrast-ratio', '.contrast-status', 
+    '.metric-value', '.metric-label', '.metric-title',
+    '.step-label', '.step-number',
+    '.preview-label', '.preview-stats',
+    '.status-text', '.sample-text',
+    '.btn-icon', '.label-icon', '.ratio-icon', '.status-icon',
+    '.metric-icon', '.empty-icon',
+    '.preview-color-hex',
+    '.analyzer-header h1', '.analyzer-header p',
+    '.step-header h2', '.step-header p',
+    '.preview-header h3', '.preview-header p',
+    '.preview-info h5', '.preview-info p',
+    '.empty-state h3', '.empty-state p',
+    '.preview-empty p'
+  ];
   
-  // Re-analizar contraste después de restaurar
-  setTimeout(() => {
-    analyzePaletteContrast();
-    updateContrastMetrics(); // Actualizar métricas en tiempo real
-  }, 200);
+  const combinedSelector = textSelectors.join(', ');
+  const textElements = document.querySelectorAll(combinedSelector);
   
-  console.log('Contraste restaurado por defecto');
+  let restoredCount = 0;
+  textElements.forEach(element => {
+    // Remover estilos inline de color para restaurar los estilos CSS originales
+    if (element.style.color) {
+      element.style.removeProperty('color');
+      restoredCount++;
+    }
+  });
+  
+  console.log(`✅ Restaurados ${restoredCount} colores de texto originales`);
 }
 
 // Función para actualizar métricas de contraste en tiempo real
@@ -510,114 +929,72 @@ function restoreOriginalTheme() {
 }
 
 // Función para aplicar contraste a toda la aplicación
-function applyContrastToEntireApp() {
+const applyContrastToEntireApp = () => {
   console.log('Aplicando contraste a toda la aplicación...');
   
-  // Solo aplicar a elementos que no tienen tema aplicado
-  applyContrastToElementType('.color-hex, .color-rgb, .color-percentage', 'color-info');
-  applyContrastToElementType('.contrast-label, .contrast-ratio, .contrast-status', 'contrast-info');
-  applyContrastToElementType('.metric-value, .metric-label', 'metrics');
-  applyContrastToElementType('.theme-btn, .contrast-btn', 'action-buttons');
-  
-  console.log('Contraste aplicado a toda la aplicación');
+  try {
+    // Usar los mismos selectores mejorados que en improveTextContrast
+    const textSelectors = [
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+      'p', 'span', 'div', 'button', 
+      '.color-hex', '.color-rgb', '.color-percentage', 
+      '.contrast-label', '.contrast-ratio', '.contrast-status', 
+      '.metric-value', '.metric-label', '.metric-title',
+      '.step-label', '.step-number',
+      '.preview-label', '.preview-stats',
+      '.status-text', '.sample-text',
+      '.btn-icon', '.label-icon', '.ratio-icon', '.status-icon',
+      '.metric-icon', '.empty-icon',
+      '.preview-color-hex',
+      '.analyzer-header h1', '.analyzer-header p',
+      '.step-header h2', '.step-header p',
+      '.preview-header h3', '.preview-header p',
+      '.preview-info h5', '.preview-info p',
+      '.empty-state h3', '.empty-state p',
+      '.preview-empty p'
+    ];
+    
+    const combinedSelector = textSelectors.join(', ');
+    const textElements = document.querySelectorAll(combinedSelector);
+    
+    console.log(`🔍 Aplicando contraste a ${textElements.length} elementos de texto`);
+    
+    textElements.forEach((element, index) => {
+      // Obtener el color de fondo del elemento o de su contenedor
+      let backgroundColor = getComputedStyle(element).backgroundColor;
+      
+      // Si el elemento es transparente, buscar el color de fondo del padre
+      if (backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
+        let parent = element.parentElement;
+        let depth = 0;
+        while (parent && (backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') && depth < 5) {
+          backgroundColor = getComputedStyle(parent).backgroundColor;
+          parent = parent.parentElement;
+          depth++;
+        }
+      }
+      
+      const hexBackground = rgbToHex(backgroundColor);
+      
+      if (hexBackground && hexBackground !== '#000000' && hexBackground !== '#ffffff') {
+        const contrastColor = getOptimalTextColor(hexBackground);
+        element.style.color = contrastColor;
+        console.log(`✅ Aplicado contraste [${index}]: ${element.textContent?.substring(0, 30)} - Fondo: ${hexBackground}, Texto: ${contrastColor}`);
+      }
+    });
+    
+    console.log('✅ Contraste aplicado a toda la aplicación');
+  } catch (error) {
+    console.error('❌ Error al aplicar contraste:', error);
+  }
 }
 
 // Función para aplicar contraste a un tipo de elemento
-function applyContrastToElementType(selector, type) {
-  const elements = document.querySelectorAll(selector);
-  elements.forEach(element => {
-    const backgroundColor = rgbToHex(getComputedStyle(element).backgroundColor);
-    if (backgroundColor && backgroundColor !== '#000000') {
-      const contrastColor = getOptimalTextColor(backgroundColor);
-      element.style.color = contrastColor;
-      console.log(`Aplicado contraste a ${type}:`, element.textContent?.substring(0, 20), 'Color:', contrastColor);
-    }
-  });
-}
+
 
 // Función mejorada para calcular el contraste de un color
-function getContrastColor(hexColor) {
+const getContrastColor = (hexColor) => {
   return getOptimalTextColor(hexColor);
-}
-
-// Función para aplicar contraste a elementos visibles
-function applyContrastToVisibleElements() {
-  // 1. Botones de modo (siempre visibles)
-  const modeButtons = document.querySelectorAll('.mode-btn');
-  modeButtons.forEach(button => {
-    const backgroundColor = rgbToHex(getComputedStyle(button).backgroundColor);
-    const contrastColor = getContrastColor(backgroundColor);
-    button.style.color = contrastColor;
-    console.log('Aplicado contraste a botón:', button.textContent, 'Color:', contrastColor);
-  });
-  
-  // 2. Header principal
-  const header = document.querySelector('.analyzer-header');
-  if (header) {
-    const headerBg = rgbToHex(getComputedStyle(header).backgroundColor);
-    const headerText = header.querySelector('h2');
-    const headerDesc = header.querySelector('p');
-    
-    if (headerText) {
-      const contrastColor = getContrastColor(headerBg);
-      headerText.style.color = contrastColor;
-      console.log('Aplicado contraste a header h2:', contrastColor);
-    }
-    
-    if (headerDesc) {
-      const contrastColor = getContrastColor(headerBg);
-      headerDesc.style.color = contrastColor;
-      console.log('Aplicado contraste a header p:', contrastColor);
-    }
-  }
-  
-  // 3. Botones de contraste (si están visibles)
-  const contrastButtons = document.querySelectorAll('.contrast-btn');
-  contrastButtons.forEach(button => {
-    const backgroundColor = rgbToHex(getComputedStyle(button).backgroundColor);
-    const contrastColor = getContrastColor(backgroundColor);
-    button.style.color = contrastColor;
-    console.log('Aplicado contraste a botón de contraste:', button.textContent, 'Color:', contrastColor);
-  });
-  
-  // 4. Elementos de la paleta de colores (si están visibles)
-  const colorItems = document.querySelectorAll('.color-item');
-  colorItems.forEach(item => {
-    const backgroundColor = rgbToHex(getComputedStyle(item).backgroundColor);
-    const contrastColor = getContrastColor(backgroundColor);
-    
-    // Aplicar a elementos de texto dentro del color-item
-    const textElements = item.querySelectorAll('.color-hex, .color-rgb, .color-percentage');
-    textElements.forEach(textEl => {
-      textEl.style.color = contrastColor;
-    });
-    console.log('Aplicado contraste a elementos de color');
-  });
-  
-  // 5. Botones de tema (si están visibles)
-  const themeButtons = document.querySelectorAll('.theme-btn');
-  themeButtons.forEach(button => {
-    const backgroundColor = rgbToHex(getComputedStyle(button).backgroundColor);
-    const contrastColor = getContrastColor(backgroundColor);
-    button.style.color = contrastColor;
-    console.log('Aplicado contraste a botón de tema:', button.textContent, 'Color:', contrastColor);
-  });
-  
-  // 6. Elementos de análisis de contraste (si están visibles)
-  const contrastItems = document.querySelectorAll('.contrast-item');
-  contrastItems.forEach(item => {
-    const backgroundColor = rgbToHex(getComputedStyle(item).backgroundColor);
-    const contrastColor = getContrastColor(backgroundColor);
-    
-    // Aplicar a elementos de texto dentro del contrast-item
-    const textElements = item.querySelectorAll('.contrast-label, .contrast-ratio, .contrast-status');
-    textElements.forEach(textEl => {
-      textEl.style.color = contrastColor;
-    });
-    console.log('Aplicado contraste a elementos de análisis');
-  });
-  
-  console.log('Mejoras de contraste aplicadas');
 }
 
 const analyzeSelectedPokemon = async () => {
@@ -639,6 +1016,9 @@ const analyzeSelectedPokemon = async () => {
     
     // Analizar contraste después de generar la paleta
     analyzePaletteContrast();
+    
+    // Auto-navigate to palette tab
+    currentStep.value = 2
   }
   
   img.crossOrigin = 'anonymous'
@@ -650,8 +1030,10 @@ const extractColorsFromImageData = (imageData) => {
   const colorMap = new Map()
   let totalSampledPixels = 0
   
-  // Sample pixels (every 5th pixel for better accuracy)
-  for (let i = 0; i < data.length; i += 20) {
+  console.log('🔍 Iniciando extracción de colores...')
+  
+  // Sample pixels (every 10th pixel for better performance)
+  for (let i = 0; i < data.length; i += 40) {
     const r = data[i]
     const g = data[i + 1]
     const b = data[i + 2]
@@ -662,14 +1044,16 @@ const extractColorsFromImageData = (imageData) => {
     
     totalSampledPixels++
     
-    // Quantize colors less aggressively to preserve more variation
-    const quantizedR = Math.round(r / 10) * 10
-    const quantizedG = Math.round(g / 10) * 10
-    const quantizedB = Math.round(b / 10) * 10
+    // Quantize colors more aggressively to reduce noise
+    const quantizedR = Math.round(r / 25) * 25
+    const quantizedG = Math.round(g / 25) * 25
+    const quantizedB = Math.round(b / 25) * 25
     
     const colorKey = `${quantizedR},${quantizedG},${quantizedB}`
     colorMap.set(colorKey, (colorMap.get(colorKey) || 0) + 1)
   }
+  
+  console.log(`📊 Píxeles muestreados: ${totalSampledPixels}`)
   
   // Convert to array and sort by frequency
   const allColors = Array.from(colorMap.entries())
@@ -690,13 +1074,177 @@ const extractColorsFromImageData = (imageData) => {
         lightness: hsl.l
       }
     })
-    .filter(color => color.percentage > 0.5) // Filtrar colores con porcentaje muy bajo
+    .filter(color => color.percentage > 1.0) // Filtrar colores con porcentaje muy bajo
     .sort((a, b) => b.percentage - a.percentage)
   
-  // Improved color selection algorithm - solo devolver colores que realmente existen
+  console.log(`🎨 Colores encontrados: ${allColors.length}`)
+  
+  // Improved color selection algorithm - seleccionar colores más diversos
   const selectedColors = selectDiverseColors(allColors, 8)
   
+  console.log('✅ Paleta final:', selectedColors.map(c => `${c.hex} (${c.percentage.toFixed(1)}%)`))
+  
   return selectedColors
+}
+
+// Improved color selection algorithm
+const selectDiverseColors = (allColors, maxColors) => {
+  // Si hay menos colores que el máximo, devolver todos los disponibles
+  if (allColors.length <= maxColors) {
+    return allColors
+  }
+  
+  const selected = []
+  const used = new Set()
+  
+  // First, add the most frequent color
+  selected.push(allColors[0])
+  used.add(allColors[0].hex)
+  
+  console.log(`🎯 Color principal: ${allColors[0].hex} (${allColors[0].percentage.toFixed(1)}%)`)
+  
+  // Then add colors that are most different from already selected ones
+  for (let i = 1; i < maxColors && i < allColors.length; i++) {
+    let bestColor = null
+    let maxScore = -1
+    
+    for (const color of allColors) {
+      if (used.has(color.hex)) continue
+      
+      // Calculate minimum difference from all selected colors
+      let minDifference = Infinity
+      for (const selectedColor of selected) {
+        const difference = calculateColorDifference(color, selectedColor)
+        minDifference = Math.min(minDifference, difference)
+      }
+      
+      // Score based on difference, saturation, and frequency
+      // Prefer colors that are different, saturated, and frequent
+      const differenceScore = minDifference / 255 // Normalize to 0-1
+      const saturationScore = color.saturation / 100 // Normalize to 0-1
+      const frequencyScore = color.percentage / 100 // Normalize to 0-1
+      
+      // Weighted combination: difference is most important, then saturation, then frequency
+      const score = differenceScore * 0.6 + saturationScore * 0.3 + frequencyScore * 0.1
+      
+      if (score > maxScore) {
+        maxScore = score
+        bestColor = color
+      }
+    }
+    
+    if (bestColor) {
+      selected.push(bestColor)
+      used.add(bestColor.hex)
+      console.log(`🎨 Color ${i + 1}: ${bestColor.hex} (${bestColor.percentage.toFixed(1)}%) - Score: ${maxScore.toFixed(3)}`)
+    } else {
+      // Si no encontramos un color diferente, parar aquí
+      console.log(`⚠️ No se encontraron más colores diferentes después de ${i} selecciones`)
+      break
+    }
+  }
+  
+  // Si no tenemos suficientes colores, agregar algunos más frecuentes
+  while (selected.length < maxColors && allColors.length > selected.length) {
+    for (const color of allColors) {
+      if (!used.has(color.hex)) {
+        selected.push(color)
+        used.add(color.hex)
+        console.log(`➕ Color adicional: ${color.hex} (${color.percentage.toFixed(1)}%)`)
+        break
+      }
+    }
+  }
+  
+  return selected.sort((a, b) => b.percentage - a.percentage)
+}
+
+// Calculate color difference using multiple metrics
+const calculateColorDifference = (color1, color2) => {
+  const [r1, g1, b1] = color1.rgb
+  const [r2, g2, b2] = color2.rgb
+  
+  // Euclidean distance in RGB space
+  const rgbDiff = Math.sqrt(
+    Math.pow(r1 - r2, 2) + 
+    Math.pow(g1 - g2, 2) + 
+    Math.pow(b1 - b2, 2)
+  )
+  
+  // HSL difference with better weighting
+  const hDiff = Math.abs(color1.hsl.h - color2.hsl.h)
+  const sDiff = Math.abs(color1.hsl.s - color2.hsl.s)
+  const lDiff = Math.abs(color1.hsl.l - color2.hsl.l)
+  
+  // Weighted combination: RGB difference is most important
+  return rgbDiff * 0.7 + hDiff * 0.2 + sDiff * 0.05 + lDiff * 0.05
+}
+
+const rgbToHexValues = (r, g, b) => {
+  return '#' + [r, g, b].map(x => {
+    const hex = x.toString(16)
+    return hex.length === 1 ? '0' + hex : hex
+  }).join('')
+}
+
+// Llamar a la función después de aplicar la paleta
+function applyPaletteAsTheme(palette) {
+  const newTheme = generateThemeFromPalette(palette)
+  applyTheme(newTheme)
+  currentTheme.value = getCurrentTheme()
+}
+
+function restoreDefaultThemeHandler() {
+  restoreDefaultTheme()
+  currentTheme.value = getCurrentTheme()
+  isContrastImproved.value = false
+}
+
+function improveGlobalContrast() {
+  const improvedTheme = improveThemeContrast(currentTheme.value)
+  applyTheme(improvedTheme)
+  currentTheme.value = getCurrentTheme()
+  isContrastImproved.value = true
+  
+  // Re-analizar contraste después de mejorar el tema
+  setTimeout(() => {
+    analyzePaletteContrast()
+  }, 100)
+}
+
+const nextStep = () => {
+  if (currentStep.value < 3) {
+    currentStep.value++
+    
+    // Si vamos al paso 3, asegurar que el análisis de contraste esté listo
+    if (currentStep.value === 3 && palette.value.length > 0 && contrastAnalysis.value.length === 0) {
+      console.log('🔄 Ejecutando análisis de contraste automáticamente...')
+      analyzePaletteContrast()
+    }
+  }
+}
+
+const prevStep = () => {
+  if (currentStep.value > 1) {
+    currentStep.value--
+  }
+}
+
+const restartFlow = () => {
+  // Solo restaurar al estado anterior, no reiniciar toda la aplicación
+  isContrastApplied.value = false
+  
+  // Restaurar colores de texto originales
+  restoreOriginalTextColors();
+  
+  // Mantener el Pokémon seleccionado y la paleta
+  // selectedPokemon.value = null
+  // palette.value = []
+  // contrastAnalysis.value = []
+  // currentStep.value = 1
+  // restoreDefaultTheme()
+  
+  console.log('✅ Estado anterior restaurado (tema aplicado, contrastes originales)');
 }
 
 // Convert RGB to HSL for better color analysis
@@ -730,141 +1278,175 @@ const rgbToHsl = (r, g, b) => {
   }
 }
 
-// Improved color selection algorithm
-const selectDiverseColors = (allColors, maxColors) => {
-  // Si hay menos colores que el máximo, devolver todos los disponibles
-  if (allColors.length <= maxColors) {
-    return allColors
-  }
+// Función para mostrar hint de contraste
+const showContrastHint = () => {
+  // Crear notificación mejorada
+  const hint = document.createElement('div');
+  hint.className = 'contrast-hint';
+  hint.innerHTML = `
+    <div class="hint-content">
+      <span class="hint-icon">💡</span>
+      <span class="hint-text">¿No ves algún texto? Puedes mejorar el contraste en el paso de análisis</span>
+      <button class="hint-close" onclick="this.parentElement.parentElement.remove()">×</button>
+    </div>
+  `;
   
-  const selected = []
-  const used = new Set()
+  // Agregar estilos mejorados
+  hint.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 25px;
+    border-radius: 15px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    max-width: 350px;
+    animation: slideIn 0.6s ease-out;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  `;
   
-  // First, add the most frequent color
-  selected.push(allColors[0])
-  used.add(allColors[0].hex)
-  
-  // Then add colors that are most different from already selected ones
-  for (let i = 1; i < maxColors && i < allColors.length; i++) {
-    let bestColor = null
-    let maxDifference = -1
-    
-    for (const color of allColors) {
-      if (used.has(color.hex)) continue
-      
-      // Calculate minimum difference from all selected colors
-      let minDifference = Infinity
-      for (const selectedColor of selected) {
-        const difference = calculateColorDifference(color, selectedColor)
-        minDifference = Math.min(minDifference, difference)
-      }
-      
-      // Prefer colors with higher saturation and good frequency
-      const score = minDifference * (1 + color.saturation / 100) * (color.percentage / 100)
-      
-      if (score > maxDifference) {
-        maxDifference = score
-        bestColor = color
-      }
+  // Agregar estilos para el contenido mejorado
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from { transform: translateX(100%) scale(0.9); opacity: 0; }
+      to { transform: translateX(0) scale(1); opacity: 1; }
     }
     
-    if (bestColor) {
-      selected.push(bestColor)
-      used.add(bestColor.hex)
-    } else {
-      // Si no encontramos un color diferente, parar aquí
-      break
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
-  }
-  
-  return selected.sort((a, b) => b.percentage - a.percentage)
-}
-
-// Calculate color difference using multiple metrics
-const calculateColorDifference = (color1, color2) => {
-  const [r1, g1, b1] = color1.rgb
-  const [r2, g2, b2] = color2.rgb
-  
-  // Euclidean distance in RGB space
-  const rgbDiff = Math.sqrt(
-    Math.pow(r1 - r2, 2) + 
-    Math.pow(g1 - g2, 2) + 
-    Math.pow(b1 - b2, 2)
-  )
-  
-  // HSL difference
-  const hDiff = Math.abs(color1.hsl.h - color2.hsl.h)
-  const sDiff = Math.abs(color1.hsl.s - color2.hsl.s)
-  const lDiff = Math.abs(color1.hsl.l - color2.hsl.l)
-  
-  // Weighted combination
-  return rgbDiff * 0.6 + hDiff * 0.3 + sDiff * 0.1 + lDiff * 0.1
-}
-
-const rgbToHexValues = (r, g, b) => {
-  return '#' + [r, g, b].map(x => {
-    const hex = x.toString(16)
-    return hex.length === 1 ? '0' + hex : hex
-  }).join('')
-}
-
-// Llamar a la función después de aplicar la paleta
-function applyPaletteAsTheme() {
-  const root = document.documentElement;
-  // NO cambiar --theme-primary ni --theme-secondary aquí
-  palette.value.forEach((color, idx) => {
-    if (idx === 0) {
-      root.style.setProperty('--theme-border', getBorderColor(color.hex));
+    
+    .contrast-hint {
+      animation: slideIn 0.6s ease-out, pulse 2s ease-in-out infinite 1s;
     }
-    if (idx === 1) {
-      root.style.setProperty('--theme-tertiary', color.hex);
+    
+    .contrast-hint:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.4);
     }
-    if (idx === 2) root.style.setProperty('--theme-quaternary', color.hex);
-    if (idx === 3) root.style.setProperty('--theme-quinary', color.hex);
-    if (idx === 4) root.style.setProperty('--theme-senary', color.hex);
-    if (idx === 5) root.style.setProperty('--theme-septenary', color.hex);
-    if (idx === 6) root.style.setProperty('--theme-octonary', color.hex);
-    if (idx === 7) root.style.setProperty('--theme-nonary', color.hex);
+    
+    .hint-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .hint-icon {
+      font-size: 1.4em;
+      animation: sparkle 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes sparkle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.1); }
+    }
+    
+    .hint-text {
+      flex: 1;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.4;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    
+    .hint-close {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      font-size: 1.3em;
+      cursor: pointer;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      font-weight: bold;
+    }
+    
+    .hint-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+  `;
+  
+  document.head.appendChild(style);
+  document.body.appendChild(hint);
+  
+  // Hacer la notificación clickeable para ir al paso de análisis
+  hint.addEventListener('click', (e) => {
+    // No navegar si se hace clic en el botón de cerrar
+    if (e.target.classList.contains('hint-close')) {
+      return;
+    }
+    
+    // Navegar al paso de análisis
+    currentStep.value = 3;
+    
+    // Remover la notificación después de hacer clic
+    setTimeout(() => {
+      if (hint.parentElement) {
+        hint.remove();
+      }
+    }, 300);
   });
-  console.log('Tema aplicado (sin cambiar fondo):', palette.value.map(c => c.hex));
+  
+  // NO auto-remover - la notificación permanece hasta que el usuario la cierre o haga clic
 }
 
-function restoreDefaultTheme() {
-  const root = document.documentElement;
-  // Restaurar colores por defecto SOLO si el usuario lo pide explícitamente
-  root.style.setProperty('--theme-primary', defaultTheme[0]);
-  root.style.setProperty('--theme-secondary', defaultTheme[1]);
-  root.style.setProperty('--theme-tertiary', defaultTheme[2]);
-  root.style.setProperty('--theme-quaternary', defaultTheme[3]);
-  root.style.setProperty('--theme-quinary', defaultTheme[4]);
-  root.style.setProperty('--theme-border', defaultTheme[5]);
-  root.style.setProperty('--theme-senary', defaultTheme[6]);
-  root.style.setProperty('--theme-septenary', defaultTheme[7]);
-  root.style.setProperty('--theme-octonary', '#4a5568');
-  // Restaurar contraste por defecto
-  restoreDefaultContrast();
+// Funciones de gestión de temas
+function handleApplyTheme(colorHexes) {
+  const newTheme = generateThemeFromPalette(colorHexes)
+  applyTheme(newTheme)
+  currentTheme.value = getCurrentTheme()
+  isContrastImproved.value = false
 }
 
-// Solo restoreDefaultTheme puede cambiar --theme-primary y --theme-secondary
+function handleRestoreTheme() {
+  restoreDefaultTheme()
+  currentTheme.value = getCurrentTheme()
+  isContrastImproved.value = false
+}
 </script>
 
 <style scoped>
 .pokemon-palette-analyzer {
-  max-width: 1200px;
+  border-radius: 20px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 10px; /* Reducido de 15px */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
 }
 
 .analyzer-header {
   text-align: center;
-  margin-bottom: 30px;
-  padding: 20px;
+  margin-bottom: 10px; /* Reducido aún más */
+  padding: 10px; /* Reducido de 15px */
+  background: var(--theme-quinary);
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--theme-border);
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .analyzer-header h2 {
-  color: #2d3748;
-  margin-bottom: 10px;
-  font-size: 2rem;
+  color: var(--theme-quaternary);
+  margin-bottom: 5px; /* Reducido de 8px */
+  font-size: 1.4rem; /* Reducido de 1.6rem */
   font-weight: bold;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
@@ -872,11 +1454,11 @@ function restoreDefaultTheme() {
 .header-info {
   display: flex;
   justify-content: center;
-  margin-top: 10px;
+  margin-top: 8px; /* Reducido de 10px */
 }
 
 .info-icon {
-  font-size: 1.2rem;
+  font-size: 1.1rem; /* Reducido de 1.2rem */
   color: #667eea;
   cursor: help;
   opacity: 0.8;
@@ -892,54 +1474,278 @@ function restoreDefaultTheme() {
 }
 
 .analyzer-header p {
-  color: #4a5568;
-  font-size: 1rem;
+  color: var(--theme-senary);
+  font-size: 0.8rem; /* Reducido de 0.9rem */
   opacity: 0.9;
   font-weight: 500;
 }
 
-.mode-selector {
+.progress-breadcrumb {
   display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 30px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
+  border-radius: 15px;
+  padding: 12px 20px;
+  border: 2px solid var(--theme-border);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  backdrop-filter: blur(15px);
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.mode-btn {
-  padding: 12px 24px;
-  border: 2px solid #e2e8f0;
-  background: #ffffff;
-  color: #667eea;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
+.breadcrumb-steps {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+  justify-content: center;
+}
+
+.breadcrumb-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.breadcrumb-step {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Reducido de 8px */
+  font-size: 0.9rem; /* Reducido de 1rem */
   font-weight: 600;
+  color: var(--theme-quaternary);
+  padding: 6px 12px; /* Reducido de 8px 15px */
+  border-radius: 8px; /* Reducido de 10px */
   transition: all 0.3s ease;
+  position: relative;
+}
+
+.breadcrumb-step.active {
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  color: var(--theme-tertiary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.breadcrumb-step.completed {
+  background: var(--theme-quinary);
+  color: var(--theme-quaternary);
+  border: 2px solid var(--theme-primary);
+}
+
+.breadcrumb-step.completed .step-number {
+  background: var(--theme-primary);
+  color: var(--theme-tertiary);
+  border-radius: 50%;
+  width: 20px; /* Reducido de 24px */
+  height: 20px; /* Reducido de 24px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem; /* Reducido de 0.9rem */
+}
+
+.step-number {
+  font-size: 1.1em; /* Reducido de 1.2em */
+  font-weight: bold;
+  color: var(--theme-primary);
+}
+
+.step-label {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.7rem; /* Reducido de 0.75rem */
+}
+
+.breadcrumb-arrow {
+  font-size: 1.3em; /* Reducido de 1.5em */
+  color: var(--theme-border);
+  margin: 0 8px; /* Reducido de 10px */
+}
+
+/* Controles de navegación compactos */
+.nav-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nav-btn-compact {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid var(--theme-border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 80px;
+  justify-content: center;
+}
+
+.nav-btn-compact.back {
+  background: var(--theme-quinary);
+  color: var(--theme-quaternary);
+}
+
+.nav-btn-compact.next {
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  color: var(--theme-tertiary);
+  border-color: var(--theme-primary);
+}
+
+.nav-btn-compact:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.nav-btn-compact.back:hover {
+  background: var(--theme-border);
+  color: var(--theme-quaternary);
+}
+
+.nav-btn-compact.next:hover {
+  background: linear-gradient(135deg, var(--theme-secondary) 0%, var(--theme-primary) 100%);
+  border-color: var(--theme-secondary);
+}
+
+.improve-btn-compact {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
+  color: white;
+  border: 2px solid #38a169;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 140px;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+}
+
+.improve-btn-compact:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(56, 161, 105, 0.4);
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  border-color: #48bb78;
+}
+
+.main-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 15px; /* Reducido aún más */
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 5px; /* Reducido de 10px */
+  max-height: calc(100vh - 200px); /* Limitar altura para evitar scroll */
+}
+
+.left-column, .right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Reducido aún más */
+  padding: 15px; /* Reducido de 20px */
+  background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  border: 2px solid var(--theme-border);
+  backdrop-filter: blur(10px);
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Reducido de 30px */
+  padding: 15px; /* Reducido de 20px */
+  background: var(--theme-quinary);
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--theme-border);
+}
+
+.step-header {
+  text-align: center;
+  margin-bottom: 15px; /* Reducido de 20px */
+}
+
+.step-header h2 {
+  color: var(--theme-quaternary);
+  margin-bottom: 8px; /* Reducido de 10px */
+  font-size: 1.5rem; /* Reducido de 1.8rem */
+  font-weight: bold;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.mode-btn.active {
-  background: #667eea;
-  color: #ffffff;
-  border-color: #667eea;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+.step-header p {
+  color: var(--theme-senary);
+  font-size: 0.9rem; /* Reducido de 1rem */
+  opacity: 0.9;
+  font-weight: 500;
 }
 
-.mode-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  border-color: var(--theme-border-hover);
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
 }
 
-.api-mode {
-  margin-bottom: 30px;
+.search-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  transition: all 0.3s ease;
 }
 
-.upload-mode {
-  margin-bottom: 30px;
+.upload-section {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-/* Contrast Analysis Styles */
+.palette-section {
+  margin-bottom: 20px; /* Reducido de 30px */
+}
+
+.palette-preview {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.theme-color-swatch {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 3px solid var(--theme-border);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.theme-color-swatch:hover {
+  transform: scale(1.3);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
 .contrast-analysis-section {
   background: var(--theme-tertiary);
   border-radius: 15px;
@@ -947,6 +1753,38 @@ function restoreDefaultTheme() {
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--theme-border);
   margin-top: 20px;
+}
+
+.contrast-hint-inline {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border: 2px solid var(--theme-primary);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 25px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.hint-inline-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hint-inline-icon {
+  font-size: 1.3em;
+  color: var(--theme-primary);
+}
+
+.hint-inline-text {
+  color: var(--theme-quaternary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
 }
 
 .contrast-analysis-section h3 {
@@ -1057,76 +1895,27 @@ function restoreDefaultTheme() {
   letter-spacing: 0.5px;
 }
 
-.palette-preview {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
-  flex-wrap: wrap;
-}
-
-.theme-color-swatch {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  border: 3px solid var(--theme-border);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-}
-
-.theme-color-swatch:hover {
-  transform: scale(1.3);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-}
-
 .contrast-results {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 240px));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
   margin-bottom: 25px;
   justify-content: center;
 }
 
 .contrast-item {
   background: var(--theme-quinary);
-  border-radius: 10px;
-  padding: 16px;
-  border: 1px solid var(--theme-border);
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid var(--theme-border);
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.contrast-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .contrast-pair {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.color-code {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-family: monospace;
-  font-weight: bold;
-}
-
-.color-sample {
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
-  border: 1px solid var(--theme-border);
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-}
-
-.color-sample:hover {
-  transform: scale(1.3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .contrast-info {
@@ -1184,44 +1973,60 @@ function restoreDefaultTheme() {
   font-size: 0.9rem;
 }
 
-.ratio-icon {
-  font-size: 1em;
-  opacity: 0.8;
+.contrast-preview {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin: 20px 0;
+  padding: 15px;
+  background: var(--theme-quinary);
+  border-radius: 10px;
+  border: 1px solid var(--theme-border);
 }
 
-.contrast-status {
-  font-weight: bold;
-  font-size: 0.9rem;
+.preview-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 5px;
+  gap: 8px;
+}
+
+.preview-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--theme-quaternary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-sample {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 2px solid var(--theme-border);
+  min-width: 120px;
+  text-align: center;
   transition: all 0.3s ease;
 }
 
-.contrast-status.pass {
-  color: #38a169;
-  background: rgba(56, 161, 105, 0.1);
-  border: 1px solid rgba(56, 161, 105, 0.3);
+.preview-sample.original {
+  background: var(--theme-quinary);
+  color: var(--theme-quaternary);
 }
 
-.contrast-status.fail {
-  color: #e53e3e;
-  background: rgba(229, 62, 62, 0.1);
-  border: 1px solid rgba(229, 62, 62, 0.3);
+.preview-sample.improved {
+  background: var(--theme-quaternary);
+  color: var(--theme-tertiary);
 }
 
-.contrast-status .status-icon {
-  font-size: 1em;
+.preview-sample.improved.active {
+  background: #2d3748;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(45, 55, 72, 0.3);
 }
 
-.contrast-actions {
-  display: flex;
-  gap: 24px;
-  justify-content: center;
-  margin-top: 30px;
-  flex-wrap: wrap;
+.sample-text {
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .button-container {
@@ -1232,19 +2037,21 @@ function restoreDefaultTheme() {
 }
 
 .contrast-btn {
-  padding: 14px 28px;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
   cursor: pointer;
-  border: 2px solid var(--theme-border);
+  border: 3px solid var(--theme-border);
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  min-width: 200px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .contrast-btn .btn-icon {
@@ -1259,15 +2066,17 @@ function restoreDefaultTheme() {
 }
 
 .contrast-btn.improve {
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
-  color: var(--theme-tertiary);
-  border-color: var(--theme-primary);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border-color: #667eea;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .contrast-btn.restore {
-  background: var(--theme-quinary);
-  color: var(--theme-quaternary);
-  border-color: var(--theme-border);
+  background: linear-gradient(135deg, #f7fafc 0%, #e2e8f0 100%);
+  color: #2d3748;
+  border-color: #cbd5e0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .contrast-btn:hover {
@@ -1282,16 +2091,514 @@ function restoreDefaultTheme() {
 
 .contrast-btn.restore:hover {
   background: var(--theme-quaternary);
+}
+
+/* Nuevo diseño compacto para análisis de contraste */
+.contrast-analysis-compact {
+  margin: 20px 0;
+}
+
+.analysis-summary {
+  background: var(--theme-quinary);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 2px solid var(--theme-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 15px;
+  background: var(--theme-tertiary);
+  border-radius: 8px;
+  border: 1px solid var(--theme-border);
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  font-size: 1.5em;
+  opacity: 0.8;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--theme-septenary);
+  text-align: center;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--theme-quaternary);
+}
+
+.contrast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.contrast-card {
+  background: var(--theme-quinary);
+  border-radius: 10px;
+  padding: 15px;
+  border: 2px solid var(--theme-border);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contrast-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 2px solid var(--theme-border);
+  flex-shrink: 0;
+}
+
+.color-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.color-hex {
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--theme-quaternary);
+}
+
+.color-index {
+  font-size: 0.7rem;
+  color: var(--theme-septenary);
+  font-weight: 500;
+}
+
+.card-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--theme-tertiary);
+  border-radius: 4px;
+  border: 1px solid var(--theme-border);
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: var(--theme-septenary);
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.metric-value.pass {
+  color: #38a169;
+}
+
+.metric-value.fail {
+  color: #e53e3e;
+}
+
+.card-preview {
+  margin: 8px 0;
+}
+
+.preview-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.preview-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--theme-border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.card-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--theme-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--theme-border);
+}
+
+.status-icon {
+  font-size: 1rem;
+}
+
+.status-icon.pass {
+  color: #38a169;
+}
+
+.status-icon.fail {
+  color: #e53e3e;
+}
+
+.status-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--theme-quaternary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.contrast-btn.applied {
+  background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
+  color: var(--theme-tertiary);
+  border-color: #38a169;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.contrast-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.contrast-btn:disabled:hover {
+  transform: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  background: var(--theme-quinary);
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--theme-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.empty-icon {
+  font-size: 5rem;
+  color: var(--theme-senary);
+  margin-bottom: 30px;
+  opacity: 0.7;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.empty-state h3 {
+  color: var(--theme-quaternary);
+  margin-bottom: 10px;
+  font-size: 1.8rem;
+}
+
+.empty-state p {
+  color: var(--theme-senary);
+  font-size: 1rem;
+  margin-bottom: 30px;
+}
+
+.back-btn {
+  padding: 12px 24px;
+  border: 2px solid var(--theme-border);
+  background: var(--theme-quinary);
+  color: var(--theme-quaternary);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 160px;
+  justify-content: center;
+}
+
+.back-btn:hover {
+  background: var(--theme-border);
+  color: var(--theme-quaternary);
+  border-color: var(--theme-border);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.back-btn .btn-icon {
+  font-size: 1.2em;
+  opacity: 0.9;
+}
+
+.continue-btn {
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 3px solid var(--theme-primary);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  color: var(--theme-tertiary);
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.continue-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, var(--theme-secondary) 0%, var(--theme-primary) 100%);
+  border-color: var(--theme-secondary);
+}
+
+.restart-btn {
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid var(--theme-border);
+  background: var(--theme-quinary);
+  color: var(--theme-quaternary);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.restart-btn:hover {
+  background: var(--theme-quaternary);
   color: var(--theme-tertiary);
   border-color: var(--theme-quaternary);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding: 20px;
+  background: var(--theme-quinary);
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--theme-border);
+}
+
+.preview-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.preview-header h3 {
+  color: var(--theme-quaternary);
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.preview-header p {
+  color: var(--theme-senary);
+  font-size: 1rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.pokemon-preview {
+  margin-bottom: 30px;
+}
+
+.preview-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--theme-quinary);
+  border-radius: 12px;
+  padding: 15px;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.preview-image {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.preview-info h5 {
+  color: var(--theme-quaternary);
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.preview-info p {
+  color: var(--theme-senary);
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.preview-types {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preview-palette-section {
+  margin-bottom: 30px;
+}
+
+.preview-palette {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.preview-color {
+  position: relative;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  color: var(--theme-quaternary);
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  min-height: 60px;
+}
+
+.preview-color-hex {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.preview-stats {
+  color: var(--theme-senary);
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.export-preview {
+  margin-top: 30px;
+}
+
+.preview-empty {
+  text-align: center;
+  padding: 80px 20px;
+  background: var(--theme-quinary);
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--theme-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.preview-empty-icon {
+  font-size: 5rem;
+  color: var(--theme-senary);
+  margin-bottom: 30px;
+  opacity: 0.7;
+  animation: float 3s ease-in-out infinite;
 }
 
 @media (max-width: 768px) {
   .pokemon-palette-analyzer {
     padding: 10px;
+    height: 100vh;
   }
   
-  .analyzer-header h2 {
+  .analyzer-header h1 {
     font-size: 1.5rem;
   }
   
@@ -1299,20 +2606,82 @@ function restoreDefaultTheme() {
     font-size: 0.9rem;
   }
   
-  .mode-selector {
+  .progress-breadcrumb {
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .breadcrumb-steps {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .breadcrumb-controls {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .nav-controls {
+    gap: 6px;
+  }
+  
+  .nav-btn-compact {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    min-width: 70px;
+  }
+  
+  .improve-btn-compact {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    min-width: 120px;
+  }
+  
+  .breadcrumb-step {
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .step-number {
+    font-size: 1.1em;
+  }
+  
+  .step-label {
+    font-size: 0.9rem;
+  }
+  
+  .breadcrumb-arrow {
+    display: none;
+  }
+  
+  .main-layout {
+    grid-template-columns: 1fr; /* Stack columns on small screens */
+    gap: 20px;
+  }
+  
+  .left-column, .right-column {
+    padding: 15px;
+  }
+  
+  .step-content {
+    padding: 15px;
+  }
+  
+  .step-header h2 {
+    font-size: 1.3rem;
+  }
+  
+  .step-header p {
+    font-size: 0.9rem;
   }
   
   .mode-btn {
     padding: 10px 16px;
     font-size: 14px;
-  }
-  
-  .contrast-actions {
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
   }
   
   .contrast-btn {
@@ -1323,6 +2692,16 @@ function restoreDefaultTheme() {
   
   .contrast-results {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .text-comparison {
+    gap: 10px;
+    padding: 12px;
+  }
+  
+  .text-option {
+    padding: 8px;
   }
   
   .global-contrast-analysis {
@@ -1339,7 +2718,7 @@ function restoreDefaultTheme() {
     font-size: 2.5rem;
   }
   
-  .palette-display {
+  .palette-preview {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 10px;
   }
@@ -1351,6 +2730,79 @@ function restoreDefaultTheme() {
   .color-info {
     font-size: 0.8rem;
   }
+  
+  .preview-card {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+  }
+  
+  .preview-image {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .preview-info {
+    align-items: center;
+  }
+  
+  .preview-info h5 {
+    font-size: 1rem;
+  }
+  
+  .preview-info p {
+    font-size: 0.8rem;
+  }
+  
+  .preview-types {
+    justify-content: center;
+  }
+  
+  .preview-palette {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  
+  .preview-color {
+    padding: 8px;
+    font-size: 0.8rem;
+  }
+  
+  .preview-color-hex {
+    font-size: 0.7rem;
+  }
+  
+  .preview-stats {
+    font-size: 0.8rem;
+  }
+  
+  .preview-empty {
+    padding: 40px 15px;
+    min-height: 300px;
+  }
+  
+  .preview-empty-icon {
+    font-size: 3rem;
+  }
+  
+  .contrast-actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .contrast-btn {
+    min-width: 180px;
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+  
+  .restart-btn {
+    min-width: 180px;
+    padding: 12px 24px;
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1358,8 +2810,39 @@ function restoreDefaultTheme() {
     padding: 5px;
   }
   
+  .progress-breadcrumb {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .breadcrumb-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .nav-controls {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .nav-btn-compact {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    min-width: 100px;
+  }
+  
+  .improve-btn-compact {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    min-width: 140px;
+  }
+  
   .analyzer-header h2 {
     font-size: 1.3rem;
+  }
+  
+  .analyzer-header p {
+    font-size: 0.9rem;
   }
   
   .mode-btn {
@@ -1382,7 +2865,7 @@ function restoreDefaultTheme() {
     font-size: 2rem;
   }
   
-  .palette-display {
+  .palette-preview {
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 8px;
   }
@@ -1393,6 +2876,59 @@ function restoreDefaultTheme() {
   
   .color-info {
     font-size: 0.7rem;
+  }
+  
+  .preview-card {
+    padding: 10px;
+  }
+  
+  .preview-image {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .preview-info h5 {
+    font-size: 1rem;
+  }
+  
+  .preview-info p {
+    font-size: 0.8rem;
+  }
+  
+  .preview-types {
+    justify-content: center;
+  }
+  
+  .preview-palette {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  
+  .preview-color {
+    padding: 6px;
+    font-size: 0.7rem;
+  }
+  
+  .preview-color-hex {
+    font-size: 0.6rem;
+  }
+  
+  .preview-stats {
+    font-size: 0.7rem;
+  }
+  
+  .preview-empty {
+    padding: 40px 15px;
+  }
+  
+  .preview-empty-icon {
+    font-size: 3rem;
+  }
+  
+  .restart-btn {
+    min-width: 160px;
+    padding: 10px 20px;
+    font-size: 13px;
   }
 }
 </style> 

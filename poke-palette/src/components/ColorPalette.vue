@@ -60,8 +60,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import InfoTooltip from './InfoTooltip.vue'
+import { applyTheme, restoreDefaultTheme as restoreDefault, generateThemeFromPalette } from '../utils/themeManager.js'
 
 // Props
 const props = defineProps({
@@ -81,6 +82,15 @@ const emit = defineEmits(['apply-theme', 'restore-theme'])
 // Reactive data
 const showNotification = ref(false)
 const notificationText = ref('')
+
+// Watcher para debuggear
+watch(() => props.palette, (newPalette) => {
+  console.log('🎨 ColorPalette - Nueva paleta recibida:', newPalette)
+  console.log('Longitud de la paleta:', newPalette.length)
+  if (newPalette.length > 0) {
+    console.log('Primer color:', newPalette[0])
+  }
+}, { immediate: true })
 
 // NO watcher ni efecto sobre palette aquí
 // Solo el botón llama a applyThemeGlobally
@@ -135,55 +145,54 @@ const copyColor = async (hex) => {
 }
 
 const applyThemeGlobally = () => {
-  if (props.palette.length === 0) return
+  console.log('🔧 Aplicando tema global...')
+  console.log('Paleta recibida:', props.palette)
   
-  const root = document.documentElement
-  
-  // Aplicar colores de la paleta como variables CSS globales
-  props.palette.forEach((color, index) => {
-    root.style.setProperty(`--theme-color-${index + 1}`, color.hex)
-  })
-  
-  // Aplicar colores principales incluyendo fondo
-  if (props.palette.length >= 1) {
-    root.style.setProperty('--theme-primary', props.palette[0].hex)
-    root.style.setProperty('--theme-border', getBorderColor(props.palette[0].hex))
-  }
-  if (props.palette.length >= 2) {
-    root.style.setProperty('--theme-secondary', props.palette[1].hex)
-    root.style.setProperty('--theme-tertiary', props.palette[1].hex)
-  }
-  if (props.palette.length >= 3) {
-    root.style.setProperty('--theme-quaternary', props.palette[2].hex)
-  }
-  if (props.palette.length >= 4) {
-    root.style.setProperty('--theme-quinary', props.palette[3].hex)
-  }
-  if (props.palette.length >= 5) {
-    root.style.setProperty('--theme-senary', props.palette[4].hex)
-  }
-  if (props.palette.length >= 6) {
-    root.style.setProperty('--theme-septenary', props.palette[5].hex)
+  if (props.palette.length === 0) {
+    console.log('❌ No hay paleta disponible')
+    return
   }
   
-  console.log('Tema completo aplicado (incluyendo fondo):', props.palette.map(c => c.hex))
-  emit('apply-theme')
+  // Extraer solo los códigos hex de la paleta
+  const colorHexes = props.palette.map(color => color.hex)
+  console.log('Colores hex extraídos:', colorHexes)
+  
+  // Generar tema usando el nuevo sistema
+  const newTheme = generateThemeFromPalette(colorHexes)
+  console.log('Tema generado:', newTheme)
+  
+  // Aplicar el tema
+  applyTheme(newTheme)
+  
+  console.log('✅ Tema aplicado usando nuevo sistema:', newTheme)
+  
+  // Mostrar notificación
+  notificationText.value = `¡Tema aplicado con ${props.palette.length} colores de ${props.pokemonName}!`
+  showNotification.value = true
+  setTimeout(() => {
+    showNotification.value = false
+  }, 3000)
+  
+  // Emitir evento
+  emit('apply-theme', colorHexes)
 }
 
 const restoreDefaultTheme = () => {
-  const root = document.documentElement
+  console.log('🔄 Restaurando tema por defecto...')
   
-  // Restaurar colores por defecto SOLO si el usuario lo pide explícitamente
-  root.style.setProperty('--theme-primary', '#667eea')
-  root.style.setProperty('--theme-secondary', '#764ba2')
-  root.style.setProperty('--theme-tertiary', '#ffffff')
-  root.style.setProperty('--theme-quaternary', '#2d3748')
-  root.style.setProperty('--theme-quinary', '#f7fafc')
-  root.style.setProperty('--theme-border', '#e2e8f0')
-  root.style.setProperty('--theme-senary', '#a0aec0')
-  root.style.setProperty('--theme-septenary', '#718096')
+  // Usar el nuevo sistema para restaurar
+  restoreDefault()
   
-  console.log('Tema restaurado por defecto')
+  console.log('✅ Tema restaurado usando nuevo sistema')
+  
+  // Mostrar notificación
+  notificationText.value = '¡Tema restaurado al estado original!'
+  showNotification.value = true
+  setTimeout(() => {
+    showNotification.value = false
+  }, 3000)
+  
+  // Emitir evento
   emit('restore-theme')
 }
 
