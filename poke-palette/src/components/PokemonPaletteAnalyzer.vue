@@ -1,10 +1,10 @@
 <template>
   <div class="pokemon-palette-analyzer">
-    <!-- Header compacto -->
-    <div class="analyzer-header">
-      <h1>Analizador de Paletas Pokémon <InfoTooltip text="Extrae y analiza las paletas de colores de imágenes de Pokémon. Esta herramienta identifica los colores dominantes y crea paletas profesionales para uso en diseño gráfico y desarrollo web." size="large" /></h1>
-      <p>Selecciona un Pokémon o sube tu propia imagen para extraer su paleta de colores</p>
-    </div>
+    <!-- Pantalla de bienvenida -->
+    <WelcomeScreen v-if="showWelcome" @start-app="startApp" />
+    
+    <!-- Contenido principal (oculto durante la bienvenida) -->
+    <div v-if="!showWelcome" class="main-content">
     
     <!-- Breadcrumb de progreso con controles -->
     <div class="progress-breadcrumb">
@@ -355,6 +355,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -366,6 +367,7 @@ import PokemonSearch from './PokemonSearch.vue'
 import PokemonCard from './PokemonCard.vue'
 import ColorPalette from './ColorPalette.vue'
 import ExportSection from './ExportSection.vue'
+import WelcomeScreen from './WelcomeScreen.vue'
 import { formatPokemonName, formatColorName, formatShapeName, formatEggGroupName, getSpanishDescription } from '../utils/formatters.js'
 import { 
   getOptimalTextColor, 
@@ -384,6 +386,7 @@ import {
   improveThemeContrast,
   getCurrentTheme 
 } from '../utils/themeManager.js'
+import { shouldShowWelcome, markWelcomeAsSeen } from '../utils/welcomeManager.js'
 
 // Props
 const props = defineProps({
@@ -401,6 +404,7 @@ const props = defineProps({
 const emit = defineEmits(['analyze', 'image-selected', 'close', 'update-shiny'])
 
 // Reactive data
+const showWelcome = ref(shouldShowWelcome())
 const selectedPokemon = ref(null)
 const palette = ref([])
 const isShiny = ref(false)
@@ -633,6 +637,12 @@ onMounted(() => {
   currentTheme.value = getCurrentTheme()
   isContrastImproved.value = false
 })
+
+// Función para iniciar la app después de la pantalla de bienvenida
+const startApp = () => {
+  showWelcome.value = false
+  markWelcomeAsSeen()
+}
 
 // Función para analizar contraste de la paleta
 function analyzePaletteContrast() {
@@ -1430,6 +1440,21 @@ function handleRestoreTheme() {
   height: 100vh;
   overflow: hidden;
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
+}
+
+.main-content {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .analyzer-header {
