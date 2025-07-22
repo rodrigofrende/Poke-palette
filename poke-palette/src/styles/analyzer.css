@@ -2,7 +2,7 @@
 
 /* Layout principal - 100vh */
 .pokemon-palette-analyzer {
-  min-height: 100vh;
+  min-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);

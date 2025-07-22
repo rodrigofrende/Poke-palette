@@ -4,8 +4,10 @@
       <input 
         v-model="searchQuery"
         @input="searchPokemon"
-        placeholder="Buscar Pokémon por nombre..."
+        :placeholder="disabled ? 'Cargando Pokémon...' : 'Buscar Pokémon por nombre...'"
         class="search-input"
+        :class="{ 'disabled': disabled }"
+        :disabled="disabled"
         aria-label="Buscar Pokémon"
         role="searchbox"
         autocomplete="off"
@@ -17,16 +19,19 @@
     <div class="random-pokemon-section">
       <button 
         @click="handleRandomPokemon"
-        :disabled="loadingRandom"
+        :disabled="loadingRandom || disabled"
         class="random-pokemon-btn"
+        :class="{ 'disabled': disabled }"
         aria-label="Obtener Pokémon aleatorio"
       >
         <span class="btn-icon">🎲</span>
-        <span class="btn-text">{{ loadingRandom ? 'Cargando...' : '¡Pokémon Aleatorio!' }}</span>
+        <span class="btn-text">{{ 
+          disabled ? 'Cargando...' : 
+          loadingRandom ? 'Cargando...' : 
+          '¡Pokémon Aleatorio!' 
+        }}</span>
       </button>
     </div>
-    
-
     
     <!-- Search results with animations -->
     <TransitionGroup 
@@ -36,16 +41,17 @@
       v-if="searchResults.length > 0"
     >
       <div 
-        v-for="pokemon in searchResults"
+        v-for="(pokemon, index) in searchResults"
         :key="pokemon.name"
-        @click="selectPokemon(pokemon)"
-        @keydown.enter="selectPokemon(pokemon)"
-        @keydown.space="selectPokemon(pokemon)"
+        @click="!disabled && selectPokemon(pokemon)"
+        @keydown.enter="!disabled && selectPokemon(pokemon)"
+        @keydown.space="!disabled && selectPokemon(pokemon)"
         class="search-item"
-        :style="{ animationDelay: `${$index * 0.1}s` }"
+        :class="{ 'disabled': disabled }"
+        :style="{ animationDelay: `${index * 0.1}s` }"
         role="button"
         :aria-label="`Seleccionar ${formatPokemonName(pokemon.name)}`"
-        tabindex="0"
+        :tabindex="disabled ? -1 : 0"
       >
         <div class="pokemon-thumbnail-container">
           <img 
@@ -65,16 +71,6 @@
               :key="type.type.name"
               :type="type.type.name"
             />
-          </div>
-          <div class="pokemon-stats" v-if="pokemon.stats">
-            <span class="stat-item">
-              <span class="stat-label">HP:</span>
-              <span class="stat-value">{{ pokemon.stats[0]?.base_stat || 'N/A' }}</span>
-            </span>
-            <span class="stat-item">
-              <span class="stat-label">ATK:</span>
-              <span class="stat-value">{{ pokemon.stats[1]?.base_stat || 'N/A' }}</span>
-            </span>
           </div>
         </div>
         
@@ -99,6 +95,11 @@
     <div v-if="searchQuery.length >= 2 && searchResults.length === 0 && !searching" class="no-results">
       <p>No se encontraron Pokémon con "{{ searchQuery }}"</p>
     </div>
+    
+    <!-- Loading state message -->
+    <div v-if="disabled && !searching" class="loading-message">
+      <p>Espera mientras se carga el Pokémon...</p>
+    </div>
   </div>
 </template>
 
@@ -113,11 +114,15 @@ const props = defineProps({
   isShiny: {
     type: Boolean,
     default: false
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 })
 
 // Emits
-const emit = defineEmits(['select-pokemon', 'update-shiny'])
+const emit = defineEmits(['select-pokemon', 'update-shiny', 'search-error'])
 
 // Reactive data
 const searchQuery = ref('')
@@ -157,9 +162,13 @@ const searchPokemon = async () => {
     searchResults.value = pokemonWithIds
   } catch (error) {
     console.error('Error searching Pokémon:', error)
-    // Mostrar mensaje de error al usuario
     searchResults.value = []
-    // Aquí podrías mostrar una notificación de error
+    // Emitir evento de error para que el componente padre lo maneje
+    emit('search-error', {
+      title: 'Error de conexión',
+      message: 'No se pudo conectar con la base de datos de Pokémon. Verifica tu conexión a internet e intenta nuevamente.',
+      type: 'error'
+    })
   } finally {
     searching.value = false
   }
@@ -181,7 +190,12 @@ const handleRandomPokemon = async () => {
     
   } catch (error) {
     console.error('Error getting random Pokémon:', error)
-    // Aquí podrías mostrar una notificación de error
+    // Emitir evento de error para que el componente padre lo maneje
+    emit('search-error', {
+      title: 'Error al obtener Pokémon aleatorio',
+      message: 'No se pudo obtener un Pokémon aleatorio. Verifica tu conexión a internet e intenta nuevamente.',
+      type: 'error'
+    })
   } finally {
     loadingRandom.value = false
   }
@@ -208,18 +222,23 @@ const selectPokemon = (pokemon) => {
 
 <style scoped>
 .search-section {
-  margin-bottom: 30px;
   width: 100%;
-  max-width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
   overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .search-container {
   position: relative;
-  max-width: 400px;
-  margin: 0 auto 20px;
+  max-width: 500px;
+  margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .search-input {
@@ -247,6 +266,18 @@ const selectPokemon = (pokemon) => {
   background: var(--theme-tertiary);
 }
 
+.search-input.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--theme-quinary);
+}
+
+.search-input.disabled:focus {
+  border-color: var(--theme-border);
+  box-shadow: none;
+  background: var(--theme-quinary);
+}
+
 .search-icon {
   position: absolute;
   left: 15px;
@@ -259,15 +290,16 @@ const selectPokemon = (pokemon) => {
 
 
 .search-results {
-  max-width: 500px;
+  max-width: 600px;
   margin: 0 auto;
   background: var(--theme-tertiary);
   border-radius: 12px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  max-height: 400px;
+  flex-grow: 1;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid var(--theme-border);
+  max-height: 320px;
 }
 
 .search-item {
@@ -281,23 +313,36 @@ const selectPokemon = (pokemon) => {
   animation: slideIn 0.3s ease-out;
   width: 100%;
   box-sizing: border-box;
+  min-height: 60px;
 }
 
 .search-item:last-child {
   border-bottom: none;
 }
 
-.search-item:hover {
+.search-item:hover:not(.disabled) {
   background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
   color: var(--theme-tertiary);
   transform: translateX(5px);
 }
 
-.search-item:hover .pokemon-name {
+.search-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.search-item.disabled:hover {
+  background: none;
+  color: inherit;
+  transform: none;
+}
+
+.search-item:hover:not(.disabled) .pokemon-name {
   color: var(--theme-tertiary);
 }
 
-.search-item:hover .type-badge {
+.search-item:hover:not(.disabled) .type-badge {
   opacity: 0.8;
 }
 
@@ -316,7 +361,7 @@ const selectPokemon = (pokemon) => {
   transition: transform 0.3s ease;
 }
 
-.search-item:hover .pokemon-thumbnail {
+.search-item:hover:not(.disabled) .pokemon-thumbnail {
   transform: scale(1.1);
 }
 
@@ -382,7 +427,7 @@ const selectPokemon = (pokemon) => {
   transition: all 0.3s ease;
 }
 
-.search-item:hover .select-indicator {
+.search-item:hover:not(.disabled) .select-indicator {
   opacity: 1;
   transform: translateX(5px);
 }
@@ -455,6 +500,17 @@ const selectPokemon = (pokemon) => {
   font-style: italic;
 }
 
+.loading-message {
+  text-align: center;
+  padding: 20px;
+  color: var(--theme-primary);
+  font-weight: 500;
+  background: var(--theme-quinary);
+  border-radius: 8px;
+  margin-top: 10px;
+  border: 1px solid var(--theme-border);
+}
+
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -479,12 +535,12 @@ const selectPokemon = (pokemon) => {
 
 /* Estilos para el botón de Pokémon aleatorio */
 .random-pokemon-section {
-  margin: 20px 0;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .random-pokemon-btn {
-  background: linear-gradient(45deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -504,10 +560,18 @@ const selectPokemon = (pokemon) => {
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-.random-pokemon-btn:disabled {
-  opacity: 0.7;
+.random-pokemon-btn:disabled,
+.random-pokemon-btn.disabled {
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+  background: var(--theme-quinary);
+  color: var(--theme-senary);
+}
+
+.random-pokemon-btn.disabled:hover {
+  transform: none;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .random-pokemon-btn .btn-icon {
@@ -521,5 +585,51 @@ const selectPokemon = (pokemon) => {
 
 .random-pokemon-btn .btn-text {
   font-weight: 600;
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+  .search-results {
+    max-width: 100%;
+    max-height: 280px;
+  }
+  
+  .search-container {
+    max-width: 100%;
+  }
+  
+  .search-item {
+    min-height: 56px;
+    padding: 12px 16px;
+  }
+  
+  .pokemon-thumbnail {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .pokemon-name {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-results {
+    max-height: 260px;
+  }
+  
+  .search-item {
+    min-height: 52px;
+    padding: 10px 12px;
+  }
+  
+  .pokemon-thumbnail {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .pokemon-name {
+    font-size: 13px;
+  }
 }
 </style> 

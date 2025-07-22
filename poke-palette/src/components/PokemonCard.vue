@@ -49,7 +49,7 @@
           <!-- Botón de análisis -->
           <button @click="$emit('analyze')" class="analyze-btn-compact">
             <span class="btn-icon-small">🎨</span>
-            Analizar Paleta
+            Generar Paleta
           </button>
         </div>
       </div>
@@ -402,22 +402,23 @@ const toggleCategory = (category) => {
 .selected-pokemon {
   display: flex;
   justify-content: center;
-  margin-bottom: 30px;
+  height: 100%;
 }
 
 .pokemon-card {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
   background: var(--theme-tertiary);
-  padding: 20px;
+  padding: 15px;
   border-radius: 20px;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-  margin-bottom: 20px;
   max-width: 800px;
   width: 100%;
   border: 1px solid var(--theme-border);
   position: relative;
+  height: 100%;
+  overflow: hidden;
 }
 
 .close-btn {
@@ -458,9 +459,10 @@ const toggleCategory = (category) => {
 .pokemon-header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 15px;
+  gap: 15px;
+  margin-bottom: 10px;
   padding: 0 5px;
+  flex-shrink: 0;
 }
 
 .pokemon-image-container {
@@ -470,12 +472,12 @@ const toggleCategory = (category) => {
 }
 
 .pokemon-image {
-  width: 160px;
-  height: 160px;
+  width: 120px;
+  height: 120px;
   object-fit: contain;
-  border-radius: 20px;
+  border-radius: 15px;
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-quinary) 100%);
-  padding: 15px;
+  padding: 10px;
   transition: transform 0.3s ease;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
@@ -490,7 +492,7 @@ const toggleCategory = (category) => {
   text-align: left;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
   width: 100%;
   margin-right: 15px;
@@ -500,18 +502,18 @@ const toggleCategory = (category) => {
 .controls-container {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
   align-items: center;
   justify-content: center;
-  min-width: 160px;
+  min-width: 140px;
   flex-shrink: 0;
-  margin-left: 20px;
-  padding: 15px;
+  margin-left: 15px;
+  padding: 12px;
   background: var(--theme-quinary);
   border-radius: 12px;
   border: 1px solid var(--theme-border);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  min-height: 120px;
+  min-height: 100px;
 }
 
 /* Shiny toggle compacto */
@@ -654,8 +656,9 @@ const toggleCategory = (category) => {
   display: flex;
   gap: 8px;
   justify-content: center;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .nav-btn {
@@ -699,20 +702,22 @@ const toggleCategory = (category) => {
 
 /* Contenido de secciones */
 .section-content {
-  min-height: 150px;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Contenedor de información agrupada */
 .pokemon-info-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px;
 }
 
 .info-section {
   background: var(--theme-quinary);
   border-radius: 12px;
-  padding: 15px;
+  padding: 12px;
   border: 1px solid var(--theme-border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
@@ -736,13 +741,17 @@ const toggleCategory = (category) => {
 .pokemon-description,
 .pokemon-gallery {
   margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .pokemon-physical-info h4,
 .pokemon-description h4,
 .pokemon-gallery h4,
 .info-section h4 {
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
   color: var(--theme-quaternary);
   font-size: 1.2rem;
   font-weight: 700;
@@ -750,11 +759,12 @@ const toggleCategory = (category) => {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .physical-grid {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
 }
 
@@ -762,14 +772,14 @@ const toggleCategory = (category) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 12px;
   background: var(--theme-tertiary);
   border-radius: 8px;
   border: 1px solid var(--theme-border);
   color: var(--theme-quaternary);
   font-weight: 500;
   transition: all 0.3s ease;
-  min-height: 45px;
+  min-height: 40px;
 }
 
 .physical-item:hover {
@@ -798,7 +808,7 @@ const toggleCategory = (category) => {
 }
 
 .description-text {
-  padding: 15px;
+  padding: 12px;
   background: var(--theme-tertiary);
   border-radius: 8px;
   border: 1px solid var(--theme-border);
@@ -814,16 +824,40 @@ const toggleCategory = (category) => {
 .gallery-categories {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px;
   width: 100%;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-border) transparent;
+}
+
+.gallery-categories::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gallery-categories::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gallery-categories::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 3px;
+}
+
+.gallery-categories::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-primary);
 }
 
 .gallery-category {
   background: var(--theme-quinary);
   border-radius: 15px;
-  padding: 20px;
+  padding: 15px;
   border: 1px solid var(--theme-border);
   width: 100%;
+  flex-shrink: 0;
 }
 
 .category-header {
@@ -831,8 +865,8 @@ const toggleCategory = (category) => {
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
   border-bottom: 2px solid var(--theme-border);
   transition: all 0.3s ease;
 }
@@ -860,6 +894,29 @@ const toggleCategory = (category) => {
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 15px;
   width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-border) transparent;
+}
+
+.gallery-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gallery-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gallery-grid::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 3px;
+}
+
+.gallery-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-primary);
 }
 
 .gallery-item {
@@ -966,6 +1023,8 @@ const toggleCategory = (category) => {
   .gallery-grid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 12px;
+    max-height: 200px;
+    padding-right: 3px;
   }
   
   .gallery-image {
@@ -1010,6 +1069,8 @@ const toggleCategory = (category) => {
   .gallery-grid {
     grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     gap: 8px;
+    max-height: 150px;
+    padding-right: 2px;
   }
   
   .gallery-image {

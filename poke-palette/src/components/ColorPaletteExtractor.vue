@@ -780,11 +780,18 @@ const copyCode = async () => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .upload-section {
   text-align: center;
   margin-bottom: 40px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .upload-section h2 {
@@ -824,6 +831,12 @@ const copyCode = async () => {
   transition: all 0.3s ease;
   background: white;
   margin-bottom: 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
 }
 
 .upload-area:hover {

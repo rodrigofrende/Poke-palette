@@ -16,7 +16,7 @@ Una herramienta web para extraer paletas de colores de Pokémon y exportarlas a 
 1. Haz clic en "🎯 Seleccionar Pokémon"
 2. Busca el Pokémon que quieres analizar
 3. Selecciónalo de la lista
-4. Haz clic en "Analizar Paleta de Colores"
+4. Haz clic en "Generar Paleta de Colores"
 
 ### 2. Subir Imagen Personalizada
 1. Haz clic en "📷 Subir Imagen"

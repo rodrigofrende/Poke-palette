@@ -1,5 +1,14 @@
 <template>
   <div class="pokemon-palette-analyzer" :class="{ 'welcome-mode': showWelcome }">
+    <!-- Componente de notificación de errores -->
+    <ErrorNotification
+      :show="errorNotification.show"
+      :title="errorNotification.title"
+      :message="errorNotification.message"
+      :type="errorNotification.type"
+      @close="closeErrorNotification"
+    />
+    
     <!-- Pantalla de bienvenida -->
     <WelcomeScreen v-if="showWelcome" @start-app="startApp" />
     
@@ -77,27 +86,91 @@
     <div class="main-layout">
       <!-- Contenido principal -->
       <div class="main-content-area">
-        <!-- Paso 1: Búsqueda -->
-        <div v-if="currentStep === 1" class="step-content search-step">
-          <div v-if="!selectedPokemon" class="step-header">
-            <h2>🔍 Buscar Pokémon</h2>
-            <p>Selecciona un Pokémon de la base de datos o sube tu propia imagen</p>
+        <!-- Paso 1: Selección de Pokémon -->
+        <div v-if="currentStep === 1" class="step-content selection-step">
+          <!-- Estado inicial: Mostrar opciones de selección -->
+          <div v-if="!selectedPokemon && !showUpload && !showSearch" class="initial-state">
+            <div class="step-header">
+              <h2>🎯 Selecciona tu Pokémon</h2>
+              <p>Busca en la base de datos o sube tu propia imagen</p>
+            </div>
+            
+            <!-- Opciones de selección -->
+            <div class="selection-options">
+              <!-- Opción 1: Búsqueda de Pokémon -->
+              <div class="option-card" @click="showSearch = true">
+                <div class="option-header">
+                  <span class="option-icon">🔍</span>
+                  <h3>Buscar Pokémon</h3>
+                </div>
+                <p>Encuentra cualquier Pokémon en la base de datos</p>
+                <div class="option-action">
+                  <span class="action-text">Haz clic para buscar</span>
+                </div>
+              </div>
+              
+              <!-- Opción 2: Subir imagen -->
+              <div class="option-card" @click="showUpload = true">
+                <div class="option-header">
+                  <span class="option-icon">📷</span>
+                  <h3>Subir Imagen</h3>
+                </div>
+                <p>Analiza cualquier imagen de Pokémon</p>
+                <div class="option-action">
+                  <span class="action-text">Haz clic para subir</span>
+                </div>
+              </div>
+            </div>
           </div>
           
-          <!-- Contenido principal -->
-          <div class="main-content">
-            <!-- Buscador de Pokémon -->
-            <div v-if="!selectedPokemon" class="search-container">
+          <!-- Estado de búsqueda: Mostrar buscador unificado -->
+          <div v-if="!selectedPokemon && showSearch && !showUpload" class="search-state">
+            <div class="search-header">
+              <button @click="showSearch = false" class="back-btn">
+                ← Volver
+              </button>
+              <h2>🔍 Buscar Pokémon</h2>
+            </div>
+            
+            <div class="search-container">
               <PokemonSearch 
                 :is-shiny="isShiny"
+                :disabled="loadingPokemon || selectingPokemon"
                 @select-pokemon="selectPokemonFromAPI"
                 @update-shiny="updateShiny"
+                @search-error="handleSearchError"
+              />
+            </div>
+          </div>
+          
+          <!-- Estado de upload: Mostrar extractor -->
+          <div v-if="!selectedPokemon && showUpload && !showSearch" class="upload-state">
+            <div class="upload-header">
+              <button @click="showUpload = false" class="back-btn">
+                ← Volver
+              </button>
+              <h2>📷 Subir Imagen</h2>
+            </div>
+            
+            <div class="upload-container">
+              <ColorPaletteExtractor />
+            </div>
+          </div>
+          
+          <!-- Estado con Pokémon seleccionado -->
+          <div v-if="selectedPokemon || selectingPokemon" class="selected-state">
+            <!-- Loader mientras se carga el Pokémon -->
+            <div v-if="loadingPokemon || selectingPokemon" class="loading-overlay">
+              <PokeballLoader 
+                size="large" 
+                variant="primary"
+                message="¡Atrapando Pokémon!"
               />
             </div>
             
-            <!-- Tarjeta del Pokémon -->
+            <!-- Tarjeta del Pokémon seleccionado -->
             <PokemonCard 
-              v-if="selectedPokemon"
+              v-if="selectedPokemon && !loadingPokemon && !selectingPokemon"
               :pokemon="selectedPokemon"
               :is-shiny="isShiny"
               @analyze="analyzeSelectedPokemon"
@@ -105,18 +178,6 @@
               @close="closePokemonCard"
               @update-shiny="updateShiny"
             />
-            
-            <!-- Extractor de paleta -->
-            <div v-if="!selectedPokemon" class="upload-section">
-              <ColorPaletteExtractor />
-            </div>
-          </div>
-          
-          <!-- Botón de continuar -->
-          <div class="step-actions" v-if="selectedPokemon || palette.length > 0">
-            <button @click="nextStep" class="continue-btn">
-              Continuar → Generar Paleta
-            </button>
           </div>
         </div>
         
@@ -141,7 +202,7 @@
           <div v-else class="empty-state">
             <div class="empty-icon">🎨</div>
             <h3>No hay paleta disponible</h3>
-            <p>Selecciona un Pokémon o sube una imagen para generar una paleta de colores</p>
+            <p>Primero debes generar una paleta en el paso anterior</p>
           </div>
         </div>
         
@@ -347,6 +408,9 @@ import PokemonCard from './PokemonCard.vue'
 import ColorPalette from './ColorPalette.vue'
 import ExportSection from './ExportSection.vue'
 import WelcomeScreen from './WelcomeScreen.vue'
+import ErrorNotification from './ErrorNotification.vue'
+import LoadingSpinner from './LoadingSpinner.vue'
+import PokeballLoader from './PokeballLoader.vue'
 import { formatPokemonName, formatColorName, formatShapeName, formatEggGroupName, getSpanishDescription } from '../utils/formatters.js'
 import { 
   getOptimalTextColor, 
@@ -396,6 +460,18 @@ const openCategories = ref([])
 const activeSection = ref('physical') // Sección por defecto
 const currentTheme = ref(getCurrentTheme())
 const isContrastImproved = ref(false)
+const showUpload = ref(false)
+const showSearch = ref(false)
+
+// Variables para manejo de errores y loading
+const loadingPokemon = ref(false)
+const selectingPokemon = ref(false)
+const errorNotification = ref({
+  show: false,
+  title: '',
+  message: '',
+  type: 'error'
+})
 
 // Variables para tabs del análisis de contraste
 const contrastActiveTab = ref('overview') // Tab activo por defecto
@@ -525,6 +601,9 @@ const getContrastLabel = (score) => {
 }
 
 const selectPokemonFromAPI = async (pokemon) => {
+  selectingPokemon.value = true
+  loadingPokemon.value = true
+  
   try {
     const [details, species] = await Promise.all([
       getPokemonDetails(pokemon.name),
@@ -542,11 +621,39 @@ const selectPokemonFromAPI = async (pokemon) => {
     }
   } catch (error) {
     console.error('Error fetching Pokémon details:', error)
+    
+    // Mostrar notificación de error al usuario
+    showErrorNotification(
+      'Pokémon no disponible',
+      `Lo sentimos, "${formatPokemonName(pokemon.name)}" no está disponible en este momento. Intenta con otro Pokémon.`,
+      'warning'
+    )
+  } finally {
+    loadingPokemon.value = false
+    selectingPokemon.value = false
   }
 }
 
 const updateShiny = (value) => {
   isShiny.value = value
+}
+
+// Funciones para manejo de errores
+const showErrorNotification = (title, message, type = 'error') => {
+  errorNotification.value = {
+    show: true,
+    title,
+    message,
+    type
+  }
+}
+
+const closeErrorNotification = () => {
+  errorNotification.value.show = false
+}
+
+const handleSearchError = (errorData) => {
+  showErrorNotification(errorData.title, errorData.message, errorData.type)
 }
 
 const handleImageSelected = (image) => {
@@ -557,6 +664,8 @@ const handleImageSelected = (image) => {
 
 const closePokemonCard = () => {
   selectedPokemon.value = null
+  selectingPokemon.value = false
+  loadingPokemon.value = false
   palette.value = []
   contrastAnalysis.value = []
   isContrastApplied.value = false
@@ -1613,10 +1722,10 @@ function handleRestoreTheme() {
   border-radius: 20px;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 10px; /* Reducido de 15px */
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - 40px);
   overflow: hidden;
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
 }
@@ -1868,9 +1977,183 @@ function handleRestoreTheme() {
   flex-direction: column;
   gap: 15px;
   flex-grow: 1;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 0 5px;
-  max-height: calc(100vh - 200px);
+  height: 100%;
+}
+
+/* Estilos para las opciones de selección */
+.selection-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  flex-grow: 1;
+  align-items: center;
+  justify-content: center;
+}
+
+.option-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 2px solid var(--theme-border);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.option-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border-color: var(--theme-primary);
+}
+
+.option-card.active {
+  border-color: var(--theme-primary);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.2);
+}
+
+.option-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.option-icon {
+  font-size: 1.5rem;
+}
+
+.option-header h3 {
+  margin: 0;
+  color: var(--theme-quaternary);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.option-card p {
+  color: var(--theme-senary);
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.upload-btn {
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+}
+
+.search-container {
+  margin-top: 15px;
+}
+
+.upload-container {
+  margin-top: 15px;
+}
+
+/* Estados de la interfaz */
+.initial-state,
+.search-state,
+.upload-state,
+.selected-state {
+  animation: fadeIn 0.3s ease-in-out;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Headers de estado */
+.search-header,
+.upload-header,
+.selected-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  justify-content: center;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.back-btn {
+  background: var(--theme-quinary);
+  color: var(--theme-quaternary);
+  border: 2px solid var(--theme-border);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.back-btn:hover {
+  background: var(--theme-tertiary);
+  border-color: var(--theme-primary);
+  transform: translateY(-2px);
+}
+
+.search-header h2,
+.upload-header h2,
+.selected-header h2 {
+  margin: 0;
+  color: var(--theme-quaternary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.selected-header h2 {
+  color: var(--theme-primary);
+}
+
+.selected-header p {
+  margin: 0;
+  color: var(--theme-senary);
+  font-size: 1rem;
+}
+
+/* Acción de las opciones */
+.option-action {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.action-text {
+  color: var(--theme-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .main-content-area {
@@ -1883,17 +2166,21 @@ function handleRestoreTheme() {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
   border: 2px solid var(--theme-border);
   backdrop-filter: blur(10px);
+  flex-grow: 1;
+  overflow: hidden;
 }
 
 .step-content {
   display: flex;
   flex-direction: column;
-  gap: 20px; /* Reducido de 30px */
-  padding: 15px; /* Reducido de 20px */
+  gap: 20px;
+  padding: 15px;
   background: var(--theme-quinary);
   border-radius: 15px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--theme-border);
+  flex-grow: 1;
+  overflow: hidden;
 }
 
 .step-header {
@@ -1928,12 +2215,21 @@ function handleRestoreTheme() {
   max-width: 600px;
   margin: 0 auto;
   transition: all 0.3s ease;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 15px;
 }
 
-.upload-section {
+.upload-container {
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .palette-section {
@@ -2643,32 +2939,7 @@ function handleRestoreTheme() {
   opacity: 0.9;
 }
 
-.continue-btn {
-  padding: 16px 32px;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: 3px solid var(--theme-primary);
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
-  color: var(--theme-tertiary);
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  min-width: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
 
-.continue-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  background: linear-gradient(135deg, var(--theme-secondary) 0%, var(--theme-primary) 100%);
-  border-color: var(--theme-secondary);
-}
 
 .restart-btn {
   padding: 14px 28px;
@@ -2848,7 +3119,12 @@ function handleRestoreTheme() {
 @media (max-width: 768px) {
   .pokemon-palette-analyzer {
     padding: 10px;
-    height: 100vh;
+    height: calc(100vh - 40px);
+  }
+  
+  .main-layout {
+    height: 100%;
+    overflow: hidden;
   }
   
   .analyzer-header h1 {
@@ -2912,6 +3188,8 @@ function handleRestoreTheme() {
   
   .main-layout {
     gap: 15px;
+    height: 100%;
+    overflow: hidden;
   }
   
   .main-content-area {
@@ -3033,6 +3311,57 @@ function handleRestoreTheme() {
   .contrast-tab-panel .preview-btn {
     padding: 10px;
     font-size: 0.8rem;
+  }
+  
+  /* Estilos responsive para las opciones de selección */
+  .selection-options {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    max-width: 100%;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .option-card {
+    padding: 20px;
+  }
+  
+  .option-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .option-card p {
+    font-size: 0.85rem;
+  }
+  
+  .upload-btn {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+  
+  /* Estilos responsive para los nuevos estados */
+  .search-header,
+  .upload-header,
+  .selected-header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  .back-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .search-header h2,
+  .upload-header h2,
+  .selected-header h2 {
+    font-size: 1.3rem;
+  }
+  
+  .selected-header p {
+    font-size: 0.9rem;
   }
 }
 
@@ -3182,6 +3511,58 @@ function handleRestoreTheme() {
     padding: 10px 20px;
     font-size: 13px;
   }
+  
+  /* Estilos responsive para las opciones de selección en pantallas pequeñas */
+  .selection-options {
+    gap: 12px;
+    max-width: 100%;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .option-card {
+    padding: 16px;
+  }
+  
+  .option-header h3 {
+    font-size: 1rem;
+  }
+  
+  .option-card p {
+    font-size: 0.8rem;
+  }
+  
+  .upload-btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+  
+  /* Estilos responsive para pantallas pequeñas */
+  .search-header,
+  .upload-header,
+  .selected-header {
+    gap: 8px;
+  }
+  
+  .back-btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+  
+  .search-header h2,
+  .upload-header h2,
+  .selected-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .selected-header p {
+    font-size: 0.85rem;
+  }
+  
+  .action-text {
+    font-size: 0.8rem;
+  }
 }
 
 /* Estilos para la imagen fija del Pokémon seleccionado */
@@ -3229,5 +3610,32 @@ function handleRestoreTheme() {
   color: var(--theme-senary);
   font-size: 0.8rem;
   opacity: 0.8;
+}
+
+/* Estilos para el loader overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.selected-state {
+  position: relative;
+  min-height: 400px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style> 
