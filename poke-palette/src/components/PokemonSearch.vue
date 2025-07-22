@@ -13,6 +13,19 @@
       <div class="search-icon">🔍</div>
     </div>
     
+    <!-- Botón de Pokémon aleatorio -->
+    <div class="random-pokemon-section">
+      <button 
+        @click="handleRandomPokemon"
+        :disabled="loadingRandom"
+        class="random-pokemon-btn"
+        aria-label="Obtener Pokémon aleatorio"
+      >
+        <span class="btn-icon">🎲</span>
+        <span class="btn-text">{{ loadingRandom ? 'Cargando...' : '¡Pokémon Aleatorio!' }}</span>
+      </button>
+    </div>
+    
 
     
     <!-- Search results with animations -->
@@ -91,7 +104,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { getPokemonImageUrl } from '../services/pokeApi.js'
+import { getPokemonImageUrl, getRandomPokemon } from '../services/pokeApi.js'
 import TypeBadge from './TypeBadge.vue'
 import { formatPokemonName, extractIdFromUrl } from '../utils/formatters.js'
 
@@ -110,6 +123,7 @@ const emit = defineEmits(['select-pokemon', 'update-shiny'])
 const searchQuery = ref('')
 const searchResults = ref([])
 const searching = ref(false)
+const loadingRandom = ref(false)
 
 
 
@@ -123,7 +137,7 @@ const searchPokemon = async () => {
   searching.value = true
   
   try {
-    const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1000`)
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=1025`)
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -151,6 +165,27 @@ const searchPokemon = async () => {
   }
 }
 
+// Función para obtener un Pokémon aleatorio
+const handleRandomPokemon = async () => {
+  loadingRandom.value = true
+  
+  try {
+    const randomPokemon = await getRandomPokemon()
+    
+    // Emitir el Pokémon aleatorio seleccionado
+    emit('select-pokemon', randomPokemon)
+    
+    // Limpiar búsqueda y resultados
+    searchQuery.value = ''
+    searchResults.value = []
+    
+  } catch (error) {
+    console.error('Error getting random Pokémon:', error)
+    // Aquí podrías mostrar una notificación de error
+  } finally {
+    loadingRandom.value = false
+  }
+}
 
 
 const handleImageError = (event) => {
@@ -440,5 +475,51 @@ const selectPokemon = (pokemon) => {
 .search-results-leave-to {
   opacity: 0;
   transform: translateY(-20px);
+}
+
+/* Estilos para el botón de Pokémon aleatorio */
+.random-pokemon-section {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.random-pokemon-btn {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.random-pokemon-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.random-pokemon-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.random-pokemon-btn .btn-icon {
+  font-size: 1.2rem;
+  animation: spin 2s linear infinite;
+}
+
+.random-pokemon-btn:disabled .btn-icon {
+  animation: none;
+}
+
+.random-pokemon-btn .btn-text {
+  font-weight: 600;
 }
 </style> 

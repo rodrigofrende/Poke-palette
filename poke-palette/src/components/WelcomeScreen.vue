@@ -80,7 +80,6 @@
           <span class="btn-text">¡Comenzar!</span>
           <span class="btn-icon">→</span>
         </button>
-        <p class="start-hint">Presiona F5 para ver esta introducción nuevamente</p>
       </div>
     </div>
   </div>
@@ -132,10 +131,11 @@ onMounted(() => {
   height: 100vh;
   background: rgba(0, 0, 0, 0.9);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1000;
   transition: opacity 0.5s ease-out;
+  overflow-y: auto;
 }
 
 .welcome-overlay.fade-out {
@@ -143,18 +143,29 @@ onMounted(() => {
 }
 
 .welcome-container {
-  max-width: 700px;
-  padding: 20px;
+  max-width: 1200px;
+  padding: 32px;
   text-align: center;
   color: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Header animado */
 .welcome-header {
   opacity: 0;
   transform: translateY(-30px);
-  transition: all 0.8s ease-out;
-  margin-bottom: 40px;
+  transition: all 0.8s cubic-bezier(.77,0,.18,1);
+  margin-bottom: 24px;
+  background: rgba(30,30,30,0.7);
+  border-radius: 18px;
+  padding: 20px 0 16px 0;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.25);
 }
 
 .welcome-header.animate-in {
@@ -163,38 +174,38 @@ onMounted(() => {
 }
 
 .pokemon-logo {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .pokeball {
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 70px;
   margin: 0 auto;
   position: relative;
   animation: bounce 2s infinite;
 }
 
 .pokeball-top {
-  width: 60px;
-  height: 30px;
+  width: 70px;
+  height: 35px;
   background: #ff3b3b;
-  border-radius: 30px 30px 0 0;
+  border-radius: 35px 35px 0 0;
   position: absolute;
   top: 0;
 }
 
 .pokeball-bottom {
-  width: 60px;
-  height: 30px;
+  width: 70px;
+  height: 35px;
   background: white;
-  border-radius: 0 0 30px 30px;
+  border-radius: 0 0 35px 35px;
   position: absolute;
   bottom: 0;
 }
 
 .pokeball-center {
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   background: white;
   border: 2px solid #333;
   border-radius: 50%;
@@ -217,24 +228,30 @@ onMounted(() => {
 }
 
 .welcome-title {
-  font-size: 2rem;
+  font-family: var(--font-pokemon);
+  font-size: 1.5rem;
   font-weight: bold;
-  margin: 10px 0 5px 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  margin: 16px 0 8px 0;
+  letter-spacing: 1.5px;
+  text-shadow: 2px 2px 6px rgba(0,0,0,0.7), 0 1px 0 #fff;
+  line-height: 1.2;
 }
 
 .welcome-subtitle {
-  font-size: 1rem;
-  opacity: 0.9;
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  opacity: 0.92;
   margin-bottom: 20px;
+  color: #e0e0e0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 /* Demo section */
 .demo-section {
-  margin: 15px 0;
+  margin: 20px 0 16px 0;
   opacity: 0;
   transform: translateY(30px);
-  transition: all 0.8s ease-out;
+  transition: all 0.8s cubic-bezier(.77,0,.18,1);
 }
 
 .demo-section.animate-in {
@@ -246,27 +263,29 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 15px;
-  margin: 10px 0;
+  gap: 24px;
+  margin: 12px 0;
 }
 
 .demo-pokemon {
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px #0008);
 }
 
 .pokemon-card {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 12px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255,255,255,0.13);
+  border-radius: 16px;
+  padding: 16px 14px 14px 14px;
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255,255,255,0.22);
   text-align: center;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.18);
 }
 
 .pokemon-image {
   width: 80px;
   height: 80px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   animation: float 3s ease-in-out infinite;
 }
 
@@ -280,20 +299,26 @@ onMounted(() => {
 }
 
 .pokemon-info h3 {
-  margin: 0 0 2px 0;
-  font-size: 0.9rem;
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  margin: 0 0 4px 0;
+  color: #fffbe7;
+  letter-spacing: 0.5px;
 }
 
 .pokemon-info p {
+  font-family: var(--font-body);
   margin: 0;
-  opacity: 0.8;
-  font-size: 0.7rem;
+  opacity: 0.85;
+  font-size: 0.95rem;
+  color: #ffe066;
 }
 
 .demo-arrow {
-  font-size: 1.2rem;
+  font-size: 1.8rem;
   color: #ff3b3b;
   animation: pulse 2s infinite;
+  filter: drop-shadow(0 1px 2px #0008);
 }
 
 @keyframes pulse {
@@ -307,31 +332,40 @@ onMounted(() => {
 
 .demo-palette {
   flex-shrink: 0;
+  background: rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 14px 18px 12px 18px;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.13);
 }
 
 .demo-palette h4 {
-  margin: 0 0 8px 0;
-  font-size: 0.9rem;
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+  font-family: var(--font-body);
+  color: #ffe066;
+  letter-spacing: 0.5px;
 }
 
 .palette-colors {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .color-swatch {
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   opacity: 0;
   transform: scale(0.5);
-  transition: all 0.5s ease-out;
+  transition: all 0.5s cubic-bezier(.77,0,.18,1);
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.18);
+  border: 2px solid #fff2;
 }
 
 .color-swatch.animate-color {
@@ -340,21 +374,24 @@ onMounted(() => {
 }
 
 .color-hex {
-  font-size: 0.5rem;
+  font-size: 0.65rem;
   font-weight: bold;
-  color: white;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.18);
+  border-radius: 4px;
+  padding: 2px 4px;
 }
 
 /* Features grid */
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin: 15px 0;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 20px 0 0 0;
   opacity: 0;
   transform: translateY(30px);
-  transition: all 0.8s ease-out;
+  transition: all 0.8s cubic-bezier(.77,0,.18,1);
 }
 
 .features-grid.animate-in {
@@ -363,40 +400,46 @@ onMounted(() => {
 }
 
 .feature-item {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 12px;
-  border-radius: 10px;
+  background: rgba(255,255,255,0.10);
+  padding: 16px 12px 14px 12px;
+  border-radius: 16px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: transform 0.3s ease;
+  border: 1.5px solid rgba(255,255,255,0.22);
+  transition: transform 0.3s cubic-bezier(.77,0,.18,1);
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.13);
 }
 
 .feature-item:hover {
-  transform: translateY(-5px);
+  transform: translateY(-3px) scale(1.02);
 }
 
 .feature-icon {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   margin-bottom: 8px;
 }
 
 .feature-item h3 {
-  font-size: 0.9rem;
+  font-size: 1rem;
   margin-bottom: 4px;
+  font-family: var(--font-body);
+  color: #ffe066;
+  letter-spacing: 0.5px;
 }
 
 .feature-item p {
-  font-size: 0.7rem;
-  opacity: 0.8;
+  font-size: 0.8rem;
+  opacity: 0.85;
   line-height: 1.2;
+  font-family: var(--font-body);
+  color: #f8f8f8;
 }
 
 /* Start button */
 .start-section {
-  margin-top: 15px;
+  margin-top: 40px;
   opacity: 0;
   transform: translateY(30px);
-  transition: all 0.8s ease-out;
+  transition: all 0.8s cubic-bezier(.77,0,.18,1);
 }
 
 .start-section.animate-in {
@@ -408,67 +451,155 @@ onMounted(() => {
   background: linear-gradient(45deg, #ff3b3b, #ff6b6b);
   color: white;
   border: none;
-  padding: 10px 25px;
+  padding: 16px 36px;
   border-radius: 50px;
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(.77,0,.18,1);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   margin: 0 auto;
+  box-shadow: 0 2px 12px 0 rgba(255,59,59,0.18);
 }
 
 .start-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(255, 59, 59, 0.3);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 10px 24px rgba(255,59,59,0.28);
 }
 
 .btn-icon {
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(.77,0,.18,1);
 }
 
 .start-btn:hover .btn-icon {
-  transform: translateX(5px);
+  transform: translateX(7px);
 }
 
 .start-hint {
   margin-top: 8px;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   opacity: 0.7;
+  color: #e0e0e0;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .welcome-container {
-    padding: 10px;
+    padding: 20px;
+    min-height: 100vh;
+    justify-content: flex-start;
+    padding-top: 40px;
+    padding-bottom: 40px;
   }
   
   .welcome-title {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
   
   .demo-container {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+  }
+  
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .palette-colors {
+    gap: 6px;
+  }
+  
+  .color-swatch {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .color-hex {
+    font-size: 0.5rem;
+  }
+  
+  .start-btn {
+    font-size: 1.1rem;
+    padding: 14px 28px;
+  }
+  
+  .pokemon-image {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .feature-item {
+    padding: 14px 10px 12px 10px;
+  }
+  
+  .feature-item h3 {
+    font-size: 0.9rem;
+  }
+  
+  .feature-item p {
+    font-size: 0.75rem;
+  }
+  
+  .welcome-title {
+    font-size: 1.2rem;
+  }
+  
+  .welcome-subtitle {
+    font-size: 1rem;
+  }
+  
+  .demo-section {
+    margin: 15px 0 12px 0;
+  }
+  
+  .features-grid {
+    margin-top: 20px;
+  }
+  
+  .start-section {
+    margin-top: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-container {
+    padding: 15px;
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
+  
+  .welcome-title {
+    font-size: 1.1rem;
+  }
+  
+  .welcome-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .demo-container {
+    gap: 8px;
+  }
+  
+  .pokemon-image {
+    width: 60px;
+    height: 60px;
   }
   
   .features-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
   
-  .palette-colors {
-    gap: 4px;
+  .feature-item {
+    padding: 12px 8px 10px 8px;
   }
   
-  .color-swatch {
-    width: 35px;
-    height: 35px;
-  }
-  
-  .color-hex {
-    font-size: 0.4rem;
+  .start-btn {
+    font-size: 1rem;
+    padding: 12px 24px;
   }
 }
 </style> 

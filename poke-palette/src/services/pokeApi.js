@@ -3,16 +3,16 @@
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
 /**
- * Obtiene una lista de Pokémon con paginación
- * @param {number} limit - Número de Pokémon a obtener (máximo 151 para la primera generación)
+ * Obtiene una lista de Pokémon desde la PokeAPI
+ * @param {number} limit - Número de Pokémon a obtener (máximo 1025 para todos los Pokémon)
  * @param {number} offset - Número de Pokémon a saltar
  * @returns {Promise<Object>} Lista de Pokémon
  */
 export const getPokemonList = async (limit = 151, offset = 0) => {
   try {
     // Validar parámetros
-    if (limit < 1 || limit > 1000) {
-      throw new Error('El límite debe estar entre 1 y 1000');
+    if (limit < 1 || limit > 1025) {
+      throw new Error('El límite debe estar entre 1 y 1025');
     }
     
     if (offset < 0) {
@@ -22,17 +22,10 @@ export const getPokemonList = async (limit = 151, offset = 0) => {
     const response = await fetch(`${BASE_URL}/pokemon?limit=${limit}&offset=${offset}`);
     
     if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('No se encontraron Pokémon con los criterios especificados');
-      } else if (response.status === 429) {
-        throw new Error('Demasiadas solicitudes. Intenta de nuevo en unos momentos');
-      } else {
-        throw new Error(`Error del servidor: ${response.status}`);
-      }
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('Error fetching Pokémon list:', error);
     throw error;
@@ -172,3 +165,30 @@ export const getPokemonCompleteInfo = async (identifier, isShiny = false) => {
     throw error;
   }
 }; 
+
+/**
+ * Obtiene un Pokémon aleatorio
+ * @returns {Promise<Object>} Detalles del Pokémon aleatorio
+ */
+export const getRandomPokemon = async () => {
+  try {
+    // Generar un ID aleatorio entre 1 y 1025
+    const randomId = Math.floor(Math.random() * 1025) + 1;
+    
+    const response = await fetch(`${BASE_URL}/pokemon/${randomId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const pokemon = await response.json();
+    
+    // Agregar la URL de la imagen oficial
+    pokemon.imageUrl = getPokemonImageUrl(randomId);
+    
+    return pokemon;
+  } catch (error) {
+    console.error('Error fetching random Pokémon:', error);
+    throw error;
+  }
+} 

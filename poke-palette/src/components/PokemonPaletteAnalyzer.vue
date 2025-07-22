@@ -1,5 +1,5 @@
 <template>
-  <div class="pokemon-palette-analyzer">
+  <div class="pokemon-palette-analyzer" :class="{ 'welcome-mode': showWelcome }">
     <!-- Pantalla de bienvenida -->
     <WelcomeScreen v-if="showWelcome" @start-app="startApp" />
     
@@ -8,25 +8,50 @@
     
     <!-- Breadcrumb de progreso con controles -->
     <div class="progress-breadcrumb">
-      <div class="breadcrumb-steps">
-        <div class="breadcrumb-step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
-          <span class="step-number">1</span>
-          <span class="step-label">Buscar Pokémon</span>
-        </div>
-        <div class="breadcrumb-arrow" v-if="currentStep >= 2">→</div>
-        <div class="breadcrumb-step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
-          <span class="step-number">2</span>
-          <span class="step-label">Generar Paleta</span>
-        </div>
-        <div class="breadcrumb-arrow" v-if="currentStep >= 3">→</div>
-        <div class="breadcrumb-step" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
-          <span class="step-number">3</span>
-          <span class="step-label">Analizar Contraste</span>
-        </div>
-      </div>
+      <!-- Botón Anterior (izquierda) -->
+      <button 
+        v-if="currentStep > 1" 
+        @click="prevStep" 
+        :disabled="!canGoBack"
+        class="nav-btn-compact back"
+      >
+        ← Anterior
+      </button>
       
-      <!-- Controles de navegación -->
-      <div class="breadcrumb-controls">
+      <!-- Contenido central -->
+      <div class="breadcrumb-center">
+        <!-- Imagen fija del Pokémon seleccionado -->
+        <div v-if="selectedPokemon" class="selected-pokemon-display">
+          <div class="pokemon-display-card">
+            <img 
+              :src="selectedPokemon.imageUrl" 
+              :alt="selectedPokemon.name"
+              class="pokemon-display-image"
+            />
+            <div class="pokemon-display-info">
+              <h4>{{ formatPokemonName(selectedPokemon.name) }}</h4>
+              <p>#{{ selectedPokemon.id }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="breadcrumb-steps">
+          <div class="breadcrumb-step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+            <span class="step-number">1</span>
+            <span class="step-label">Buscar Pokémon</span>
+          </div>
+          <div class="breadcrumb-arrow" v-if="currentStep >= 2">→</div>
+          <div class="breadcrumb-step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+            <span class="step-number">2</span>
+            <span class="step-label">Generar Paleta</span>
+          </div>
+          <div class="breadcrumb-arrow" v-if="currentStep >= 3">→</div>
+          <div class="breadcrumb-step" :class="{ active: currentStep >= 3, completed: currentStep > 3 }">
+            <span class="step-number">3</span>
+            <span class="step-label">Analizar Contraste</span>
+          </div>
+        </div>
+        
         <!-- Botón de Mejorar Contraste (solo en paso 3) -->
         <button 
           v-if="currentStep === 3 && contrastAnalysis.length > 0" 
@@ -35,31 +60,23 @@
         >
           🎯 Mejorar Contraste
         </button>
-        
-        <!-- Botones de navegación -->
-        <div class="nav-controls">
-          <button 
-            v-if="currentStep > 1" 
-            @click="prevStep" 
-            class="nav-btn-compact back"
-          >
-            ← Anterior
-          </button>
-          <button 
-            v-if="currentStep < 3 && (selectedPokemon || palette.length > 0)" 
-            @click="nextStep" 
-            class="nav-btn-compact next"
-          >
-            Siguiente →
-          </button>
-        </div>
       </div>
+      
+      <!-- Botón Siguiente (derecha) -->
+      <button 
+        v-if="currentStep < 3" 
+        @click="nextStep" 
+        :disabled="!canGoNext"
+        class="nav-btn-compact next"
+      >
+        Siguiente →
+      </button>
     </div>
     
-    <!-- Layout de dos columnas -->
+    <!-- Layout principal -->
     <div class="main-layout">
-      <!-- Columna izquierda: Búsqueda y Análisis -->
-      <div class="left-column">
+      <!-- Contenido principal -->
+      <div class="main-content-area">
         <!-- Paso 1: Búsqueda -->
         <div v-if="currentStep === 1" class="step-content search-step">
           <div v-if="!selectedPokemon" class="step-header">
@@ -136,128 +153,143 @@
           </div>
           
           <div v-if="contrastAnalysis.length > 0" class="analysis-section">
-            <h3>
-              📊 Análisis de Contraste
-              <InfoTooltip text="Evalúa la legibilidad del texto sobre cada color de la paleta. Los resultados indican si el contraste cumple con los estándares de accesibilidad web. Los colores que aprueban son adecuados para uso en interfaces, mientras que los que fallan requieren ajustes para garantizar la legibilidad." size="medium" />
-            </h3>
-            
-            <!-- Hint intuitivo para el usuario -->
-            <div class="contrast-hint-inline">
-              <div class="hint-inline-content">
-                <span class="hint-inline-icon">💡</span>
-                <span class="hint-inline-text">¿Algunos textos se ven difíciles de leer? Usa el botón "Mejorar Contraste Global" para optimizar automáticamente la legibilidad</span>
-              </div>
+            <!-- Navegación de tabs -->
+            <div class="contrast-tabs-navigation">
+              <button 
+                v-for="tab in contrastTabs" 
+                :key="tab.id"
+                @click="setContrastActiveTab(tab.id)"
+                :class="['contrast-tab-btn', { active: contrastActiveTab === tab.id }]"
+              >
+                <span class="tab-icon">{{ tab.icon }}</span>
+                <span class="tab-text">{{ tab.title }}</span>
+              </button>
             </div>
             
-            <!-- Global Contrast Analysis -->
-            <div class="global-contrast-analysis">
-              <h4>🎯 Análisis General de la Aplicación</h4>
-              <div class="contrast-metrics">
-                <div class="metric-card">
-                  <div class="metric-header">
-                    <span class="metric-icon">📊</span>
-                    <span class="metric-title">Contraste Promedio</span>
+                        <!-- Contenido de tabs -->
+            <div class="contrast-tabs-content">
+              <!-- Tab: Resumen -->
+              <div v-if="contrastActiveTab === 'overview'" class="contrast-tab-panel">
+                <h3>
+                  📊 Análisis de Contraste
+                  <InfoTooltip text="Evalúa la legibilidad del texto sobre cada color de la paleta. Los resultados indican si el contraste cumple con los estándares de accesibilidad web. Los colores que aprueban son adecuados para uso en interfaces, mientras que los que fallan requieren ajustes para garantizar la legibilidad." size="medium" />
+                </h3>
+                
+                <!-- Hint intuitivo para el usuario -->
+                <div class="contrast-hint-inline">
+                  <div class="hint-inline-content">
+                    <span class="hint-inline-icon">💡</span>
+                    <span class="hint-inline-text">¿Algunos textos se ven difíciles de leer? Usa el botón "Mejorar Contraste Global" para optimizar automáticamente la legibilidad</span>
                   </div>
-                  <div class="metric-value">{{ globalContrastScore.toFixed(1) }}</div>
-                  <div class="metric-bar">
-                    <div 
-                      class="metric-fill" 
-                      :style="{ width: `${Math.min(globalContrastScore * 10, 100)}%` }"
-                      :class="{ 'excellent': globalContrastScore >= 7, 'good': globalContrastScore >= 5 && globalContrastScore < 7, 'poor': globalContrastScore < 5 }"
-                    ></div>
-                  </div>
-                  <div class="metric-label">{{ getContrastLabel(globalContrastScore) }}</div>
                 </div>
                 
-                <div class="metric-card">
-                  <div class="metric-header">
-                    <span class="metric-icon">✅</span>
-                    <span class="metric-title">Elementos Aprobados</span>
+                <!-- Global Contrast Analysis -->
+                <div class="global-contrast-analysis">
+                  <div class="analysis-header">
+                    <div class="analysis-title">
+                      <span class="analysis-icon">⚙️</span>
+                      <span class="analysis-text">Análisis General de la Aplicación</span>
+                    </div>
                   </div>
-                  <div class="metric-value">{{ passedElements }}/{{ totalElements }}</div>
-                  <div class="metric-bar">
-                    <div 
-                      class="metric-fill" 
-                      :style="{ width: `${(passedElements / totalElements) * 100}%` }"
-                      :class="{ 'excellent': (passedElements / totalElements) >= 0.8, 'good': (passedElements / totalElements) >= 0.6 && (passedElements / totalElements) < 0.8, 'poor': (passedElements / totalElements) < 0.6 }"
-                    ></div>
+                  <div class="contrast-metrics">
+                    <div class="metric-card">
+                      <div class="metric-header">
+                        <span class="metric-icon">📊</span>
+                        <span class="metric-title">CONTRASTE PROMEDIO</span>
+                      </div>
+                      <div class="metric-value">{{ globalContrastScore.toFixed(1) }}</div>
+                      <div class="metric-bar">
+                        <div 
+                          class="metric-fill" 
+                          :style="{ width: `${Math.min(globalContrastScore * 10, 100)}%` }"
+                          :class="{ 'excellent': globalContrastScore >= 7, 'good': globalContrastScore >= 5 && globalContrastScore < 7, 'poor': globalContrastScore < 5 }"
+                        ></div>
+                      </div>
+                      <div class="metric-label">{{ getContrastLabel(globalContrastScore) }}</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                      <div class="metric-header">
+                        <span class="metric-icon">✅</span>
+                        <span class="metric-title">ELEMENTOS APROBADOS</span>
+                      </div>
+                      <div class="metric-value">{{ passedElements }}/{{ totalElements }}</div>
+                      <div class="metric-bar">
+                        <div 
+                          class="metric-fill" 
+                          :style="{ width: `${(passedElements / totalElements) * 100}%` }"
+                          :class="{ 'excellent': (passedElements / totalElements) >= 0.8, 'good': (passedElements / totalElements) >= 0.6 && (passedElements / totalElements) < 0.8, 'poor': (passedElements / totalElements) < 0.6 }"
+                        ></div>
+                      </div>
+                      <div class="metric-label">{{ Math.round((passedElements / totalElements) * 100) }}% DE APROBACIÓN</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                      <div class="metric-header">
+                        <span class="metric-icon">🎨</span>
+                        <span class="metric-title">PALETA ACTUAL</span>
+                      </div>
+                      <div class="metric-subtitle">{{ currentThemeName }}</div>
+                      <div class="palette-preview">
+                        <div 
+                          v-for="(color, index) in currentThemeColors" 
+                          :key="index"
+                          class="theme-color-swatch"
+                          :style="{ backgroundColor: color }"
+                          :title="color"
+                        ></div>
+                      </div>
+                      <div class="metric-label">{{ palette.length }} COLORES EXTRAÍDOS</div>
+                    </div>
                   </div>
-                  <div class="metric-label">{{ Math.round((passedElements / totalElements) * 100) }}% de aprobación</div>
                 </div>
                 
-                <div class="metric-card">
-                  <div class="metric-header">
-                    <span class="metric-icon">🎨</span>
-                    <span class="metric-title">Paleta Actual</span>
-                  </div>
-                  <div class="metric-value">{{ currentThemeName }}</div>
-                  <div class="palette-preview">
-                    <div 
-                      v-for="(color, index) in currentThemeColors" 
-                      :key="index"
-                      class="theme-color-swatch"
-                      :style="{ backgroundColor: color }"
-                      :title="color"
-                    ></div>
-                  </div>
-                  <div class="metric-label">{{ palette.length }} colores extraídos</div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Análisis de Contraste Compacto -->
-            <div class="contrast-analysis-compact">
-              <div class="analysis-summary">
-                <div class="summary-stats">
-                  <div class="stat-item">
-                    <span class="stat-icon">📊</span>
-                    <span class="stat-label">Colores Analizados</span>
-                    <span class="stat-value">{{ contrastAnalysis.length }}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-icon">✅</span>
-                    <span class="stat-label">Aprobados</span>
-                    <span class="stat-value">{{ passedElements }}/{{ totalElements }}</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-icon">🎯</span>
-                    <span class="stat-label">Promedio</span>
-                    <span class="stat-value">{{ globalContrastScore.toFixed(1) }}</span>
+                <!-- Análisis de Contraste Compacto -->
+                <div class="contrast-analysis-compact">
+                  <div class="analysis-summary">
+                    <div class="summary-stats">
+                      <div class="stat-item">
+                        <span class="stat-icon">📊</span>
+                        <span class="stat-label">Colores Analizados</span>
+                        <span class="stat-value">{{ contrastAnalysis.length }}</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-icon">✅</span>
+                        <span class="stat-label">Aprobados</span>
+                        <span class="stat-value">{{ passedElements }}/{{ totalElements }}</span>
+                      </div>
+                      <div class="stat-item">
+                        <span class="stat-icon">🎯</span>
+                        <span class="stat-label">Promedio</span>
+                        <span class="stat-value">{{ globalContrastScore.toFixed(1) }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div class="contrast-grid">
-                <div 
-                  v-for="(result, index) in contrastAnalysis" 
-                  :key="index"
-                  class="contrast-card"
-                >
-                  <div class="card-header">
-                    <div class="color-swatch" :style="{ backgroundColor: result.background || '#ccc' }"></div>
-                    <div class="color-info">
-                      <span class="color-hex">{{ result.background || 'N/A' }}</span>
-                      <span class="color-index">#{{ index + 1 }}</span>
+              <!-- Tab: Detalles -->
+              <div v-if="contrastActiveTab === 'details'" class="contrast-tab-panel">
+                <h3>
+                  🔍 Análisis Detallado de Contraste
+                  <InfoTooltip text="Análisis individual de cada color de la paleta con texto blanco y negro. Los resultados muestran el ratio de contraste y si cumple con los estándares WCAG AA." size="medium" />
+                </h3>
+                
+                <div class="contrast-grid">
+                  <div 
+                    v-for="(result, index) in contrastAnalysis" 
+                    :key="index"
+                    class="contrast-card"
+                  >
+                    <div class="card-header">
+                      <div class="color-preview" :style="{ backgroundColor: result.background }"></div>
+                      <div class="color-info">
+                        <span class="color-hex">{{ result.background }}</span>
+                        <span class="color-name">Color {{ index + 1 }}</span>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div class="card-metrics">
-                    <div class="metric-row">
-                      <span class="metric-label">Blanco:</span>
-                      <span class="metric-value" :class="{ 'pass': result.whitePasses, 'fail': !result.whitePasses }">
-                        {{ result.whiteRatio ? result.whiteRatio.toFixed(1) : 'N/A' }}
-                      </span>
-                    </div>
-                    <div class="metric-row">
-                      <span class="metric-label">Negro:</span>
-                      <span class="metric-value" :class="{ 'pass': result.blackPasses, 'fail': !result.blackPasses }">
-                        {{ result.blackRatio ? result.blackRatio.toFixed(1) : 'N/A' }}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div class="card-preview">
-                    <div class="preview-buttons">
+                    
+                    <div class="text-comparison">
                       <button 
                         class="preview-btn white"
                         :style="{ 
@@ -277,15 +309,15 @@
                         Negro
                       </button>
                     </div>
-                  </div>
-                  
-                  <div class="card-status">
-                    <span class="status-icon" :class="{ 'pass': result.whitePasses || result.blackPasses, 'fail': !result.whitePasses && !result.blackPasses }">
-                      {{ (result.whitePasses || result.blackPasses) ? '✅' : '❌' }}
-                    </span>
-                    <span class="status-text">
-                      {{ (result.whitePasses || result.blackPasses) ? 'WCAG AA' : 'Falla' }}
-                    </span>
+                    
+                    <div class="card-status">
+                      <span class="status-icon" :class="{ 'pass': result.whitePasses || result.blackPasses, 'fail': !result.whitePasses && !result.blackPasses }">
+                        {{ (result.whitePasses || result.blackPasses) ? '✅' : '❌' }}
+                      </span>
+                      <span class="status-text">
+                        {{ (result.whitePasses || result.blackPasses) ? 'WCAG AA' : 'Falla' }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -300,60 +332,7 @@
         </div>
       </div>
       
-      <!-- Columna derecha: Vista Previa -->
-      <div class="right-column">
-        <div class="preview-section">
-          <div class="preview-header">
-            <h3>Vista Previa</h3>
-            <p>Resultados en tiempo real</p>
-          </div>
-          
-          <div class="preview-content">
-            <div v-if="!selectedPokemon && palette.length === 0" class="preview-empty">
-              <div class="preview-icon">🎨</div>
-              <p>Selecciona un Pokémon para ver la vista previa</p>
-            </div>
-            
-            <div v-else-if="selectedPokemon" class="preview-pokemon">
-              <div class="preview-pokemon-card">
-                <img 
-                  :src="selectedPokemon.imageUrl" 
-                  :alt="selectedPokemon.name"
-                  class="preview-pokemon-image"
-                />
-                <div class="preview-pokemon-info">
-                  <h4>{{ formatPokemonName(selectedPokemon.name) }}</h4>
-                  <p>#{{ selectedPokemon.id }}</p>
-                  <div class="preview-types">
-                    <span 
-                      v-for="type in selectedPokemon.types" 
-                      :key="type.type.name"
-                      class="preview-type-badge"
-                    >
-                      {{ type.type.name }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div v-else-if="palette.length > 0" class="preview-palette">
-              <h4>Paleta Generada</h4>
-              <div class="preview-palette-colors">
-                <div 
-                  v-for="(color, index) in palette" 
-                  :key="index"
-                  class="preview-color-swatch"
-                  :style="{ backgroundColor: color }"
-                  :title="color"
-                >
-                  <span class="color-hex">{{ color }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
     </div>
   </div>
@@ -417,6 +396,15 @@ const openCategories = ref([])
 const activeSection = ref('physical') // Sección por defecto
 const currentTheme = ref(getCurrentTheme())
 const isContrastImproved = ref(false)
+
+// Variables para tabs del análisis de contraste
+const contrastActiveTab = ref('overview') // Tab activo por defecto
+
+// Definición de tabs para análisis de contraste
+const contrastTabs = [
+  { id: 'overview', title: 'Resumen', icon: '📊' },
+  { id: 'details', title: 'Detalles', icon: '🔍' }
+]
 
 // Watch for palette changes to enable next step
 watch(palette, (newPalette) => {
@@ -505,12 +493,35 @@ const currentThemeColors = computed(() => {
   ].filter(Boolean)
 })
 
+// Lógica de navegación
+const canGoBack = computed(() => {
+  return currentStep.value > 1
+})
+
+const canGoNext = computed(() => {
+  switch (currentStep.value) {
+    case 1:
+      return selectedPokemon.value !== null || palette.value.length > 0
+    case 2:
+      return palette.value.length > 0
+    case 3:
+      return contrastAnalysis.value.length > 0
+    default:
+      return false
+  }
+})
+
+// Función para cambiar tab de análisis de contraste
+const setContrastActiveTab = (tabId) => {
+  contrastActiveTab.value = tabId
+}
+
 // Methods
 const getContrastLabel = (score) => {
-  if (score >= 7) return 'Excelente'
-  if (score >= 5) return 'Bueno'
-  if (score >= 3) return 'Regular'
-  return 'Necesita Mejora'
+  if (score >= 7) return 'EXCELENTE'
+  if (score >= 5) return 'BUENO'
+  if (score >= 3) return 'REGULAR'
+  return 'NECESITA MEJORA'
 }
 
 const selectPokemonFromAPI = async (pokemon) => {
@@ -1430,6 +1441,174 @@ function handleRestoreTheme() {
 </script>
 
 <style scoped>
+/* Estilos para tabs de análisis de contraste */
+.contrast-tabs-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 25px;
+  padding: 0 20px;
+}
+
+.contrast-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: 2px solid var(--theme-border);
+  border-radius: 10px;
+  background: var(--theme-quinary);
+  color: var(--theme-quaternary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.contrast-tab-btn:hover {
+  background: var(--theme-tertiary);
+  border-color: var(--theme-primary);
+  transform: translateY(-2px);
+}
+
+.contrast-tab-btn.active {
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  color: var(--theme-tertiary);
+  border-color: var(--theme-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.tab-icon {
+  font-size: 1.1em;
+}
+
+.tab-text {
+  font-size: 0.85rem;
+}
+
+.contrast-tabs-content {
+  width: 100%;
+}
+
+.contrast-tab-panel {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilos específicos para el tab de detalles */
+.contrast-tab-panel .contrast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 25px;
+}
+
+.contrast-tab-panel .contrast-card {
+  background: var(--theme-quinary);
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid var(--theme-border);
+  transition: all 0.3s ease;
+}
+
+.contrast-tab-panel .contrast-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--theme-primary);
+}
+
+.contrast-tab-panel .card-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.contrast-tab-panel .color-preview {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  border: 3px solid var(--theme-border);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.contrast-tab-panel .color-info {
+  flex: 1;
+}
+
+.contrast-tab-panel .color-hex {
+  display: block;
+  font-family: monospace;
+  font-weight: bold;
+  color: var(--theme-quaternary);
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.contrast-tab-panel .color-name {
+  color: var(--theme-senary);
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.contrast-tab-panel .text-comparison {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.contrast-tab-panel .preview-btn {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid var(--theme-border);
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.contrast-tab-panel .preview-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.contrast-tab-panel .card-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--theme-tertiary);
+}
+
+.contrast-tab-panel .status-icon {
+  font-size: 1.2em;
+}
+
+.contrast-tab-panel .status-icon.pass {
+  color: #10b981;
+}
+
+.contrast-tab-panel .status-icon.fail {
+  color: #ef4444;
+}
+
+.contrast-tab-panel .status-text {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--theme-quaternary);
+}
 .pokemon-palette-analyzer {
   border-radius: 20px;
   max-width: 1400px;
@@ -1440,6 +1619,17 @@ function handleRestoreTheme() {
   height: 100vh;
   overflow: hidden;
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
+}
+
+.pokemon-palette-analyzer.welcome-mode {
+  height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
 }
 
 .main-content {
@@ -1509,45 +1699,45 @@ function handleRestoreTheme() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
   border-radius: 15px;
-  padding: 12px 20px;
+  padding: 8px 16px;
   border: 2px solid var(--theme-border);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
   backdrop-filter: blur(15px);
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   gap: 20px;
   flex-wrap: wrap;
+}
+
+.breadcrumb-center {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+  justify-content: center;
 }
 
 .breadcrumb-steps {
   display: flex;
   align-items: center;
   gap: 15px;
-  flex: 1;
   justify-content: center;
-}
-
-.breadcrumb-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
 }
 
 .breadcrumb-step {
   display: flex;
   align-items: center;
-  gap: 6px; /* Reducido de 8px */
-  font-size: 0.9rem; /* Reducido de 1rem */
+  gap: 6px;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--theme-quaternary);
-  padding: 6px 12px; /* Reducido de 8px 15px */
-  border-radius: 8px; /* Reducido de 10px */
+  padding: 6px 12px;
+  border-radius: 8px;
   transition: all 0.3s ease;
   position: relative;
 }
@@ -1569,16 +1759,16 @@ function handleRestoreTheme() {
   background: var(--theme-primary);
   color: var(--theme-tertiary);
   border-radius: 50%;
-  width: 20px; /* Reducido de 24px */
-  height: 20px; /* Reducido de 24px */
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem; /* Reducido de 0.9rem */
+  font-size: 0.8rem;
 }
 
 .step-number {
-  font-size: 1.1em; /* Reducido de 1.2em */
+  font-size: 1.1em;
   font-weight: bold;
   color: var(--theme-primary);
 }
@@ -1586,63 +1776,64 @@ function handleRestoreTheme() {
 .step-label {
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-size: 0.7rem; /* Reducido de 0.75rem */
+  font-size: 0.7rem;
 }
 
 .breadcrumb-arrow {
-  font-size: 1.3em; /* Reducido de 1.5em */
+  font-size: 1.3em;
   color: var(--theme-border);
-  margin: 0 8px; /* Reducido de 10px */
+  margin: 0 8px;
 }
 
-/* Controles de navegación compactos */
-.nav-controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
+/* Botones de navegación en extremos */
 .nav-btn-compact {
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
+  border: none;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 2px solid var(--theme-border);
+  min-width: 100px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  min-width: 80px;
-  justify-content: center;
+}
+
+.nav-btn-compact:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.nav-btn-compact:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 .nav-btn-compact.back {
-  background: var(--theme-quinary);
+  background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
   color: var(--theme-quaternary);
+  border: 2px solid var(--theme-border);
+}
+
+.nav-btn-compact.back:not(:disabled):hover {
+  background: linear-gradient(135deg, var(--theme-tertiary) 0%, var(--theme-quinary) 100%);
+  border-color: var(--theme-primary);
 }
 
 .nav-btn-compact.next {
   background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
   color: var(--theme-tertiary);
-  border-color: var(--theme-primary);
+  border: 2px solid var(--theme-primary);
 }
 
-.nav-btn-compact:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.nav-btn-compact.back:hover {
-  background: var(--theme-border);
-  color: var(--theme-quaternary);
-}
-
-.nav-btn-compact.next:hover {
+.nav-btn-compact.next:not(:disabled):hover {
   background: linear-gradient(135deg, var(--theme-secondary) 0%, var(--theme-primary) 100%);
-  border-color: var(--theme-secondary);
+  transform: translateY(-2px) scale(1.05);
 }
 
 .improve-btn-compact {
@@ -1673,20 +1864,20 @@ function handleRestoreTheme() {
 }
 
 .main-layout {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 15px; /* Reducido aún más */
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 0 5px; /* Reducido de 10px */
-  max-height: calc(100vh - 200px); /* Limitar altura para evitar scroll */
-}
-
-.left-column, .right-column {
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Reducido aún más */
-  padding: 15px; /* Reducido de 20px */
+  gap: 15px;
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 5px;
+  max-height: calc(100vh - 200px);
+}
+
+.main-content-area {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 15px;
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
   border-radius: 20px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
@@ -1752,17 +1943,17 @@ function handleRestoreTheme() {
 .palette-preview {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 8px;
+  margin: 15px 0;
   flex-wrap: wrap;
 }
 
 .theme-color-swatch {
-  width: 35px;
-  height: 35px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 3px solid var(--theme-border);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  border: 2px solid var(--theme-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
 }
 
@@ -1822,28 +2013,55 @@ function handleRestoreTheme() {
 }
 
 .global-contrast-analysis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  background: var(--theme-quinary);
+  border-radius: 15px;
+  padding: 25px;
   margin-bottom: 30px;
-  justify-items: center;
-  align-items: start;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   max-width: 1000px;
   margin-left: auto;
   margin-right: auto;
 }
 
+.analysis-header {
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.analysis-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.analysis-icon {
+  font-size: 1.2em;
+}
+
+.analysis-text {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .metric-card {
-  background: var(--theme-quinary);
+  background: white;
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   border: 1px solid var(--theme-border);
   text-align: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-  min-height: 180px;
+  min-height: 160px;
   width: 100%;
-  max-width: 320px;
+  max-width: 300px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1858,10 +2076,10 @@ function handleRestoreTheme() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  color: var(--theme-quaternary);
-  font-size: 1.1rem;
+  gap: 10px;
+  margin-bottom: 15px;
+  color: var(--theme-primary);
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
@@ -1871,26 +2089,27 @@ function handleRestoreTheme() {
 
 .metric-title {
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .metric-value {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: bold;
-  color: var(--theme-quaternary);
-  margin-bottom: 15px;
+  color: var(--theme-primary);
+  margin-bottom: 12px;
   font-family: monospace;
   line-height: 1;
 }
 
 .metric-bar {
-  height: 10px;
-  background: var(--theme-border);
-  border-radius: 6px;
-  margin-bottom: 12px;
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  margin-bottom: 10px;
   overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .metric-fill {
@@ -1913,11 +2132,19 @@ function handleRestoreTheme() {
 }
 
 .metric-label {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: var(--theme-senary);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.metric-subtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--theme-primary);
+  margin-bottom: 15px;
+  text-align: center;
 }
 
 .contrast-results {
@@ -1979,10 +2206,11 @@ function handleRestoreTheme() {
 }
 
 .contrast-metrics {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  justify-items: center;
+  align-items: start;
 }
 
 .contrast-ratio {
@@ -2633,30 +2861,28 @@ function handleRestoreTheme() {
   
   .progress-breadcrumb {
     flex-direction: column;
-    gap: 15px;
-    padding: 15px;
-    margin-bottom: 20px;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 15px;
+  }
+  
+  .breadcrumb-center {
+    width: 100%;
+    flex-direction: column;
+    gap: 12px;
   }
   
   .breadcrumb-steps {
     width: 100%;
     justify-content: center;
-  }
-  
-  .breadcrumb-controls {
-    width: 100%;
-    justify-content: center;
     flex-wrap: wrap;
-  }
-  
-  .nav-controls {
-    gap: 6px;
+    gap: 8px;
   }
   
   .nav-btn-compact {
-    padding: 6px 12px;
+    padding: 8px 12px;
     font-size: 0.8rem;
-    min-width: 70px;
+    min-width: 80px;
   }
   
   .improve-btn-compact {
@@ -2668,15 +2894,16 @@ function handleRestoreTheme() {
   .breadcrumb-step {
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
+    padding: 4px 8px;
   }
   
   .step-number {
-    font-size: 1.1em;
+    font-size: 1em;
   }
   
   .step-label {
-    font-size: 0.9rem;
+    font-size: 0.7rem;
   }
   
   .breadcrumb-arrow {
@@ -2684,16 +2911,15 @@ function handleRestoreTheme() {
   }
   
   .main-layout {
-    grid-template-columns: 1fr; /* Stack columns on small screens */
-    gap: 20px;
+    gap: 15px;
   }
   
-  .left-column, .right-column {
-    padding: 15px;
+  .main-content-area {
+    padding: 12px;
   }
   
   .step-content {
-    padding: 15px;
+    padding: 12px;
   }
   
   .step-header h2 {
@@ -2715,118 +2941,98 @@ function handleRestoreTheme() {
     font-size: 14px;
   }
   
-  .contrast-results {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .text-comparison {
-    gap: 10px;
-    padding: 12px;
-  }
-  
-  .text-option {
-    padding: 8px;
-  }
-  
+  /* Estilos responsive para el análisis global */
   .global-contrast-analysis {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .metric-card {
     padding: 20px;
-    min-height: 150px;
+    margin-bottom: 20px;
   }
   
-  .metric-value {
-    font-size: 2.5rem;
-  }
-  
-  .palette-preview {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px;
-  }
-  
-  .color-item {
-    padding: 8px;
-  }
-  
-  .color-info {
-    font-size: 0.8rem;
-  }
-  
-  .preview-card {
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    padding: 10px;
-  }
-  
-  .preview-image {
-    width: 80px;
-    height: 80px;
-  }
-  
-  .preview-info {
-    align-items: center;
-  }
-  
-  .preview-info h5 {
+  .analysis-title {
+    padding: 10px 16px;
     font-size: 1rem;
   }
   
-  .preview-info p {
-    font-size: 0.8rem;
+  .contrast-metrics {
+    grid-template-columns: 1fr;
+    gap: 15px;
   }
   
-  .preview-types {
-    justify-content: center;
+  .metric-card {
+    max-width: 100%;
+    padding: 18px;
+    min-height: 140px;
   }
   
-  .preview-palette {
-    grid-template-columns: repeat(2, 1fr);
+  .metric-value {
+    font-size: 2rem;
+  }
+  
+  .metric-subtitle {
+    font-size: 1rem;
+  }
+  
+  .palette-preview {
     gap: 6px;
   }
   
-  .preview-color {
-    padding: 8px;
+  .theme-color-swatch {
+    width: 25px;
+    height: 25px;
+  }
+  
+  /* Estilos responsive para la imagen fija del Pokémon */
+  .pokemon-display-card {
+    max-width: 200px;
+    padding: 6px 8px;
+  }
+  
+  .pokemon-display-image {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .pokemon-display-info h4 {
     font-size: 0.8rem;
   }
   
-  .preview-color-hex {
+  .pokemon-display-info p {
     font-size: 0.7rem;
   }
   
-  .preview-stats {
+  /* Responsive para tabs de contraste */
+  .contrast-tabs-navigation {
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 10px;
+  }
+  
+  .contrast-tab-btn {
+    padding: 10px 16px;
     font-size: 0.8rem;
   }
   
-  .preview-empty {
-    padding: 40px 15px;
-    min-height: 300px;
+  .contrast-tab-panel .contrast-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
   }
   
-  .preview-empty-icon {
-    font-size: 3rem;
+  .contrast-tab-panel .contrast-card {
+    padding: 15px;
   }
   
-  .contrast-actions {
+  .contrast-tab-panel .color-preview {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .contrast-tab-panel .text-comparison {
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
+    gap: 8px;
   }
   
-  .contrast-btn {
-    min-width: 180px;
-    padding: 12px 24px;
-    font-size: 14px;
-  }
-  
-  .restart-btn {
-    min-width: 180px;
-    padding: 12px 24px;
-    font-size: 14px;
+  .contrast-tab-panel .preview-btn {
+    padding: 10px;
+    font-size: 0.8rem;
   }
 }
 
@@ -2890,9 +3096,30 @@ function handleRestoreTheme() {
     font-size: 2rem;
   }
   
+  .metric-subtitle {
+    font-size: 0.9rem;
+  }
+  
   .palette-preview {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 8px;
+    gap: 4px;
+  }
+  
+  .theme-color-swatch {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .global-contrast-analysis {
+    padding: 15px;
+  }
+  
+  .analysis-title {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .contrast-metrics {
+    gap: 12px;
   }
   
   .color-item {
@@ -2955,5 +3182,52 @@ function handleRestoreTheme() {
     padding: 10px 20px;
     font-size: 13px;
   }
+}
+
+/* Estilos para la imagen fija del Pokémon seleccionado */
+.selected-pokemon-display {
+  display: flex;
+  justify-content: center;
+}
+
+.pokemon-display-card {
+  background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--theme-border);
+  backdrop-filter: blur(10px);
+  max-width: 250px;
+}
+
+.pokemon-display-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 3px;
+}
+
+.pokemon-display-info {
+  flex: 1;
+  text-align: left;
+}
+
+.pokemon-display-info h4 {
+  margin: 0 0 2px 0;
+  color: var(--theme-quaternary);
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.pokemon-display-info p {
+  margin: 0;
+  color: var(--theme-senary);
+  font-size: 0.8rem;
+  opacity: 0.8;
 }
 </style> 
