@@ -97,7 +97,7 @@
       <!-- Contenido principal -->
       <div class="main-content-area">
         <!-- Paso 1: Búsqueda de Pokémon -->
-        <div v-if="currentStep === 1" class="step-content selection-step">
+        <div v-if="currentStep === 1" class="step-content selection-step animate-in">
           <!-- Estado de búsqueda: Mostrar buscador directamente -->
           <div v-if="!selectedPokemon" class="search-state">
             <div class="search-header">
@@ -141,13 +141,13 @@
         </div>
         
         <!-- Paso 2: Generar Paleta -->
-        <div v-if="currentStep === 2" class="step-content palette-step">
-          <div class="step-header">
+        <div v-if="currentStep === 2" class="step-content palette-step animate-in">
+          <div class="step-header animate-in">
             <h2>🎨 Generar Paleta</h2>
             <p>Analiza la imagen y extrae los colores dominantes</p>
           </div>
           
-          <div v-if="palette.length > 0" class="palette-section">
+          <div v-if="palette.length > 0" class="palette-section animate-in">
             <ColorPalette 
               :palette="palette"
               :pokemon-name="selectedPokemon ? formatPokemonName(selectedPokemon.name) : 'la imagen'"
@@ -159,7 +159,7 @@
 
           </div>
           
-          <div v-else class="empty-state">
+          <div v-else class="empty-state animate-in">
             <div class="empty-icon">🎨</div>
             <h3>No hay paleta disponible</h3>
             <p>Primero debes generar una paleta en el paso anterior</p>
@@ -167,7 +167,7 @@
         </div>
         
         <!-- Paso 3: Análisis de Contraste -->
-        <div v-if="currentStep === 3" class="step-content analysis-step">
+        <div v-if="currentStep === 3" class="step-content analysis-step animate-in">
           <div class="step-header">
             <h2>📊 Análisis de Contraste</h2>
             <p>Evalúa la legibilidad y accesibilidad de los colores</p>
@@ -3540,5 +3540,138 @@ function handleUpdatePalette(updatedPalette) {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Animaciones para el paso 2: Generar Paleta */
+.palette-step.animate-in {
+  animation: stepSlideIn 0.8s ease-out 0.2s both;
+}
+
+@keyframes stepSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animación para el contenedor step-content */
+.step-content.animate-in {
+  animation: stepContentSlideIn 0.7s ease-out 0.1s both;
+}
+
+@keyframes stepContentSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(25px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animaciones específicas para cada tipo de paso */
+.selection-step.animate-in {
+  animation: selectionStepSlideIn 0.8s ease-out 0.1s both;
+}
+
+@keyframes selectionStepSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.analysis-step.animate-in {
+  animation: analysisStepSlideIn 0.8s ease-out 0.1s both;
+}
+
+@keyframes analysisStepSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animación para el header del paso */
+.step-header.animate-in {
+  animation: headerFadeIn 0.6s ease-out 0.3s both;
+}
+
+@keyframes headerFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animación para la sección de paleta */
+.palette-section.animate-in {
+  animation: paletteSectionFadeIn 0.7s ease-out 0.5s both;
+}
+
+@keyframes paletteSectionFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animación para el estado vacío */
+.empty-state.animate-in {
+  animation: emptyStateFadeIn 0.6s ease-out 0.4s both;
+}
+
+@keyframes emptyStateFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animaciones para elementos internos del paso 1 */
+.search-state {
+  animation: fadeInUp 0.6s ease-out 0.3s both;
+}
+
+.selected-state {
+  animation: fadeInUp 0.6s ease-out 0.3s both;
+}
+
+/* Animaciones para elementos internos del paso 3 */
+.analysis-section {
+  animation: fadeInUp 0.6s ease-out 0.3s both;
+}
+
+.contrast-tabs-navigation {
+  animation: fadeInUp 0.6s ease-out 0.4s both;
+}
+
+.contrast-tabs-content {
+  animation: fadeInUp 0.6s ease-out 0.5s both;
 }
 </style> 

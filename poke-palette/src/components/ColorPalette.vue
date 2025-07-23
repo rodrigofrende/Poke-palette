@@ -1,5 +1,5 @@
 <template>
-  <div class="results-section">
+  <div class="results-section animate-in">
     <h3>Paleta de Colores <InfoTooltip text="Muestra los colores dominantes extraídos de la imagen. Los colores están ordenados por frecuencia de aparición. Haz clic en cualquier color para copiar su código hexadecimal al portapapeles." size="medium" /></h3>
     
     <!-- Color palette -->
@@ -17,10 +17,10 @@
             @click="copyColor(color.originalHex || color.hex)"
           ></div>
           
-          <!-- Color actual (si es diferente al original) -->
+          <!-- Color actual (siempre presente, pero con opacidad condicional) -->
           <div 
-            v-if="color.hex !== (color.originalHex || color.hex)"
             class="color-swatch current" 
+            :class="{ 'has-changes': color.hex !== (color.originalHex || color.hex) }"
             :style="{ backgroundColor: color.hex }"
             @click="copyColor(color.hex)"
           ></div>
@@ -44,13 +44,25 @@
           <span class="color-rgb">RGB({{ color.rgb.join(', ') }})</span>
           <span class="color-percentage">{{ color.percentage.toFixed(1) }}%</span>
         </div>
-        <button 
-          @click="copyColor(color.hex)"
-          class="copy-btn"
-          title="Copiar color"
-        >
-          ✕
-        </button>
+        
+        <!-- Botones de acción del lado derecho -->
+        <div class="color-actions">
+          <button 
+            @click="copyColor(color.hex)"
+            class="action-btn copy-btn"
+            title="Copiar color"
+          >
+            📋
+          </button>
+          <button 
+            @click="restoreOriginalColor(index)"
+            class="action-btn restore-btn"
+            :class="{ 'visible': color.originalHex && color.hex !== color.originalHex }"
+            title="Restaurar color original"
+          >
+            ↩️
+          </button>
+        </div>
       </div>
     </div>
     
@@ -185,16 +197,53 @@ const copyColor = async (hex) => {
     try {
       document.execCommand('copy')
       notificationText.value = `¡Color ${hex} copiado al portapapeles!`
+      showNotification.value = true
+      
+      setTimeout(() => {
+        showNotification.value = false
+      }, 3000)
     } catch (fallbackError) {
-      notificationText.value = 'Error al copiar el color. Intenta seleccionar y copiar manualmente.'
+      console.error('Fallback copy failed:', fallbackError)
+      notificationText.value = 'Error al copiar el color'
+      showNotification.value = true
+      
+      setTimeout(() => {
+        showNotification.value = false
+      }, 3000)
     }
     
     document.body.removeChild(textArea)
+  }
+}
+
+const restoreOriginalColor = (index) => {
+  const color = props.palette[index]
+  if (color.originalHex) {
+    // Convertir hex original a RGB
+    const r = parseInt(color.originalHex.slice(1, 3), 16)
+    const g = parseInt(color.originalHex.slice(3, 5), 16)
+    const b = parseInt(color.originalHex.slice(5, 7), 16)
+    
+    // Crear nueva paleta con el color restaurado
+    const updatedPalette = [...props.palette]
+    updatedPalette[index] = {
+      ...updatedPalette[index],
+      hex: color.originalHex,
+      rgb: [r, g, b]
+    }
+    
+    // Emitir evento para actualizar la paleta
+    emit('update-palette', updatedPalette)
+    
+    // Mostrar notificación
+    notificationText.value = `¡Color restaurado a ${color.originalHex}!`
     showNotification.value = true
     
     setTimeout(() => {
       showNotification.value = false
     }, 3000)
+    
+    console.log(`🎨 Color ${index} restaurado a ${color.originalHex}`)
   }
 }
 
@@ -257,9 +306,13 @@ const restoreDefaultTheme = () => {
 .results-section {
   background: var(--theme-tertiary);
   border-radius: 15px;
-  padding: 30px;
+  padding: 20px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--theme-border);
+  max-height: calc(100vh - 200px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .results-section h3 {
@@ -289,21 +342,50 @@ const restoreDefaultTheme = () => {
 
 .palette-display {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+  max-height: calc(100vh - 400px);
+  overflow-y: auto;
+  padding-right: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-border) transparent;
+}
+
+.palette-display::-webkit-scrollbar {
+  width: 6px;
+}
+
+.palette-display::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.palette-display::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 3px;
+}
+
+.palette-display::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-primary);
 }
 
 .color-item {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 15px;
+  gap: 12px;
+  padding: 12px;
   border-radius: 10px;
   background: var(--theme-quinary);
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
   border: 1px solid var(--theme-border);
   position: relative;
+  min-height: 70px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.color-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .color-item:hover {
@@ -319,12 +401,13 @@ const restoreDefaultTheme = () => {
 }
 
 .color-swatch {
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   border-radius: 8px;
   border: 2px solid var(--theme-border);
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .color-swatch.original {
@@ -348,11 +431,20 @@ const restoreDefaultTheme = () => {
 }
 
 .color-swatch.current {
-  border-color: var(--theme-secondary);
+  border-color: var(--theme-border);
   position: relative;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
 }
 
-.color-swatch.current::after {
+.color-swatch.current.has-changes {
+  border-color: var(--theme-secondary);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.color-swatch.current.has-changes::after {
   content: 'EDITADO';
   position: absolute;
   top: -8px;
@@ -365,6 +457,18 @@ const restoreDefaultTheme = () => {
   padding: 2px 6px;
   border-radius: 4px;
   white-space: nowrap;
+  animation: labelSlideIn 0.3s ease-out;
+}
+
+@keyframes labelSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .color-swatch:hover {
@@ -398,6 +502,59 @@ const restoreDefaultTheme = () => {
   border-radius: 4px;
 }
 
+/* Contenedor de botones de acción */
+.color-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding-left: 10px;
+}
+
+.action-btn {
+  background: var(--theme-quinary);
+  border: 1px solid var(--theme-border);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  color: var(--theme-quaternary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:hover {
+  background: var(--theme-quaternary);
+  color: var(--theme-tertiary);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+}
+
+/* Estilos para el botón de restaurar */
+.restore-btn {
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.restore-btn.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+/* Estilos específicos para cada tipo de botón */
 .copy-btn {
   background: var(--theme-quinary);
   border: 1px solid var(--theme-border);
@@ -478,10 +635,11 @@ const restoreDefaultTheme = () => {
 
 .theme-buttons {
   display: flex;
-  gap: 16px;
-  margin: 24px 0 0 0;
+  gap: 12px;
+  margin: 16px 0 0 0;
   justify-content: center;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .button-container {
@@ -623,6 +781,90 @@ const restoreDefaultTheme = () => {
   .theme-btn {
     width: 100%;
     padding: 12px 16px;
+  }
+  
+  .color-actions {
+    margin-left: 8px;
+    padding-left: 5px;
+  }
+  
+  .action-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .palette-display {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .color-item {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    min-height: 90px;
+  }
+  
+  .color-actions {
+    margin-left: 0;
+    padding-left: 0;
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .action-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+  
+  .results-section {
+    padding: 15px;
+    max-height: calc(100vh - 150px);
+  }
+}
+
+/* Animación de entrada para el componente ColorPalette */
+.results-section.animate-in {
+  animation: paletteSlideIn 0.8s ease-out 0.3s both;
+}
+
+@keyframes paletteSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateY(-5px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animación para los elementos internos de la paleta */
+.palette-display {
+  animation: fadeInUp 0.6s ease-out 0.6s both;
+}
+
+.theme-buttons {
+  animation: fadeInUp 0.6s ease-out 0.8s both;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style> 

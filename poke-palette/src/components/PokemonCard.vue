@@ -1,5 +1,5 @@
 <template>
-  <div class="selected-pokemon">
+  <div class="selected-pokemon animate-in">
     <div class="pokemon-card animate-in">
       <!-- Close button -->
       <button @click="$emit('close')" class="close-btn">
@@ -47,7 +47,7 @@
           </div>
           
           <!-- Botón de análisis -->
-          <button @click="$emit('analyze')" class="analyze-btn-compact">
+          <button @click="$emit('analyze')" class="analyze-btn-compact animate-in">
             <span class="btn-icon-small">🎨</span>
             Generar Paleta
           </button>
@@ -1142,8 +1142,8 @@ const toggleCategory = (category) => {
 }
 
 /* Animación de entrada para el PokemonCard */
-.animate-in {
-  animation: slideInUp 0.6s ease-out;
+.pokemon-card.animate-in {
+  animation: slideInUp 0.6s ease-out 0.2s both;
 }
 
 @keyframes slideInUp {
@@ -1159,15 +1159,51 @@ const toggleCategory = (category) => {
 
 /* Animación adicional para elementos internos */
 .pokemon-header {
-  animation: fadeInUp 0.8s ease-out 0.2s both;
+  animation: fadeInUp 0.8s ease-out 0.4s both;
 }
 
 .section-navigation {
-  animation: fadeInUp 0.8s ease-out 0.3s both;
+  animation: fadeInUp 0.8s ease-out 0.5s both;
 }
 
 .section-content {
-  animation: fadeInUp 0.8s ease-out 0.4s both;
+  animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+/* Animación para el contenedor principal */
+.selected-pokemon.animate-in {
+  animation: containerSlideIn 0.6s ease-out 0.1s both;
+}
+
+@keyframes containerSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animación específica para el botón Generar Paleta */
+.analyze-btn-compact.animate-in {
+  animation: buttonSlideIn 0.7s ease-out 0.7s both;
+}
+
+@keyframes buttonSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-2px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes fadeInUp {
