@@ -165,9 +165,8 @@
   gap: 15px;
 }
 
-/* Contenedores de búsqueda y carga */
-.search-container,
-.upload-section {
+/* Contenedor de búsqueda */
+.search-container {
   background: rgba(255, 255, 255, 0.5);
   border-radius: 10px;
   padding: 15px;
@@ -175,8 +174,7 @@
   transition: all 0.3s ease;
 }
 
-.search-container:hover,
-.upload-section:hover {
+.search-container:hover {
   border-color: var(--theme-primary);
   background: rgba(255, 255, 255, 0.7);
 }

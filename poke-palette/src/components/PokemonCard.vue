@@ -107,7 +107,7 @@
         
         <!-- Galería de imágenes -->
         <div v-if="activeSection === 'gallery'" class="section-panel">
-          <div class="pokemon-gallery" v-if="Object.keys(groupedImages).length > 0">
+          <div class="pokemon-gallery">
             <h4>🎨 Galería de Sprites</h4>
             
             <div class="gallery-categories">
@@ -122,6 +122,7 @@
                 </div>
                 <div class="gallery-grid" v-if="openCategories.includes(category)">
                   <div 
+                    v-if="images.length > 0"
                     v-for="(image, index) in images" 
                     :key="`${category}-${index}`"
                     class="gallery-item"
@@ -139,6 +140,9 @@
                         <span class="gallery-label">{{ image.name }}</span>
                       </div>
                     </div>
+                  </div>
+                  <div v-else class="empty-category-message">
+                    <p>No hay sprites disponibles para esta categoría</p>
                   </div>
                 </div>
               </div>
@@ -330,25 +334,26 @@ const pokemonImages = computed(() => {
   return images
 })
 
-// Group images by category and filter out empty ones
+// Group images by category - show all categories even if empty
 const groupedImages = computed(() => {
   const groups = {}
+  
+  // Definir todas las categorías posibles
+  const allCategories = ['Oficial', 'Generaciones', 'Animados', 'Básicos', 'Especiales']
+  
+  // Inicializar todas las categorías
+  allCategories.forEach(category => {
+    groups[category] = []
+  })
+  
+  // Agregar imágenes a sus categorías
   pokemonImages.value.forEach(image => {
-    if (!groups[image.category]) {
-      groups[image.category] = []
-    }
-    groups[image.category].push(image)
-  })
-  
-  // Filter out empty categories
-  const filteredGroups = {}
-  Object.keys(groups).forEach(category => {
-    if (groups[category].length > 0) {
-      filteredGroups[category] = groups[category]
+    if (groups[image.category]) {
+      groups[image.category].push(image)
     }
   })
   
-  return filteredGroups
+  return groups
 })
 
 // Methods
@@ -382,7 +387,16 @@ const handleImageError = (event) => {
 watch(groupedImages, (newGroups) => {
   const availableCategories = Object.keys(newGroups)
   if (availableCategories.length > 0 && openCategories.value.length === 0) {
-    openCategories.value = [availableCategories[0]]
+    // Buscar la primera categoría que tenga imágenes
+    const firstCategoryWithImages = availableCategories.find(category => 
+      newGroups[category] && newGroups[category].length > 0
+    )
+    if (firstCategoryWithImages) {
+      openCategories.value = [firstCategoryWithImages]
+    } else {
+      // Si no hay categorías con imágenes, abrir la primera
+      openCategories.value = [availableCategories[0]]
+    }
   }
 }, { immediate: true })
 
@@ -402,7 +416,10 @@ const toggleCategory = (category) => {
 .selected-pokemon {
   display: flex;
   justify-content: center;
-  height: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: visible;
+  padding: 20px;
 }
 
 .pokemon-card {
@@ -417,8 +434,10 @@ const toggleCategory = (category) => {
   width: 100%;
   border: 1px solid var(--theme-border);
   position: relative;
-  height: 100%;
-  overflow: hidden;
+  height: fit-content;
+  max-height: calc(100vh - 40px);
+  overflow: visible;
+  min-height: 0;
 }
 
 .close-btn {
@@ -656,7 +675,7 @@ const toggleCategory = (category) => {
   display: flex;
   gap: 8px;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-top: 5px;
   flex-wrap: wrap;
   flex-shrink: 0;
 }
@@ -705,6 +724,10 @@ const toggleCategory = (category) => {
   flex-grow: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 385px; /* Altura reducida para ver bordes completos */
 }
 
 /* Contenedor de información agrupada */
@@ -712,6 +735,12 @@ const toggleCategory = (category) => {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  flex-grow: 1;
+  max-height: 385px; /* Altura reducida para ver bordes completos */
 }
 
 .info-section {
@@ -724,6 +753,10 @@ const toggleCategory = (category) => {
 
 .section-panel {
   animation: fadeIn 0.4s ease-out;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 @keyframes fadeIn {
@@ -745,6 +778,9 @@ const toggleCategory = (category) => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
+  flex-grow: 1;
+  max-height: 100%;
 }
 
 .pokemon-physical-info h4,
@@ -829,7 +865,8 @@ const toggleCategory = (category) => {
   flex-grow: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: 100%;
+  min-height: 0;
+  max-height: 385px; /* Altura reducida para ver bordes completos */
   scrollbar-width: thin;
   scrollbar-color: var(--theme-border) transparent;
 }
@@ -968,6 +1005,23 @@ const toggleCategory = (category) => {
   font-weight: 600;
   text-align: center;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.empty-category-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  color: var(--theme-quaternary);
+  font-style: italic;
+  opacity: 0.7;
+  text-align: center;
+  width: 100%;
+}
+
+.empty-category-message p {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {

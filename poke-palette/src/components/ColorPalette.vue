@@ -8,17 +8,49 @@
         v-for="(color, index) in palette" 
         :key="index"
         class="color-item"
-        @click="copyColor(color.hex)"
       >
-        <div 
-          class="color-swatch" 
-          :style="{ backgroundColor: color.hex }"
-        ></div>
+        <div class="color-swatch-container">
+          <!-- Color original (siempre visible) -->
+          <div 
+            class="color-swatch original" 
+            :style="{ backgroundColor: color.originalHex || color.hex }"
+            @click="copyColor(color.originalHex || color.hex)"
+          ></div>
+          
+          <!-- Color actual (si es diferente al original) -->
+          <div 
+            v-if="color.hex !== (color.originalHex || color.hex)"
+            class="color-swatch current" 
+            :style="{ backgroundColor: color.hex }"
+            @click="copyColor(color.hex)"
+          ></div>
+          
+          <!-- Input de color con tooltip -->
+          <div class="color-picker-container">
+            <input 
+              type="color" 
+              :value="color.hex"
+              @input="updateColor(index, $event.target.value)"
+              class="color-picker"
+            />
+            <InfoTooltip 
+              text="Haz clic para editar este color. El color original se mantiene arriba para referencia." 
+              size="small" 
+            />
+          </div>
+        </div>
         <div class="color-info">
           <span class="color-hex">{{ color.hex }}</span>
           <span class="color-rgb">RGB({{ color.rgb.join(', ') }})</span>
           <span class="color-percentage">{{ color.percentage.toFixed(1) }}%</span>
         </div>
+        <button 
+          @click="copyColor(color.hex)"
+          class="copy-btn"
+          title="Copiar color"
+        >
+          ✕
+        </button>
       </div>
     </div>
     
@@ -77,7 +109,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['apply-theme', 'restore-theme'])
+const emit = defineEmits(['apply-theme', 'restore-theme', 'update-palette'])
 
 // Reactive data
 const showNotification = ref(false)
@@ -109,6 +141,28 @@ function getBorderColor(hexColor) {
 }
 
 // Methods
+const updateColor = (index, newHex) => {
+  // Convertir hex a RGB
+  const r = parseInt(newHex.slice(1, 3), 16)
+  const g = parseInt(newHex.slice(3, 5), 16)
+  const b = parseInt(newHex.slice(5, 7), 16)
+  
+  // Crear nueva paleta con el color actualizado
+  const updatedPalette = [...props.palette]
+  updatedPalette[index] = {
+    ...updatedPalette[index],
+    hex: newHex,
+    rgb: [r, g, b],
+    // Guardar el color original si no existe
+    originalHex: updatedPalette[index].originalHex || updatedPalette[index].hex
+  }
+  
+  // Emitir evento para actualizar la paleta
+  emit('update-palette', updatedPalette)
+  
+  console.log(`🎨 Color ${index} actualizado a ${newHex}`)
+}
+
 const copyColor = async (hex) => {
   try {
     await navigator.clipboard.writeText(hex)
@@ -247,13 +301,123 @@ const restoreDefaultTheme = () => {
   padding: 15px;
   border-radius: 10px;
   background: var(--theme-quinary);
-  cursor: pointer;
   transition: transform 0.2s ease;
   border: 1px solid var(--theme-border);
+  position: relative;
 }
 
 .color-item:hover {
   transform: translateY(-2px);
+}
+
+.color-swatch-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-swatch {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  border: 2px solid var(--theme-border);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.color-swatch.original {
+  border-color: var(--theme-primary);
+  position: relative;
+}
+
+.color-swatch.original::after {
+  content: 'ORIGINAL';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--theme-primary);
+  color: var(--theme-tertiary);
+  font-size: 8px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.color-swatch.current {
+  border-color: var(--theme-secondary);
+  position: relative;
+}
+
+.color-swatch.current::after {
+  content: 'EDITADO';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--theme-secondary);
+  color: var(--theme-tertiary);
+  font-size: 8px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.color-swatch:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.color-picker-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.color-picker {
+  width: 30px;
+  height: 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+
+.color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-picker::-webkit-color-swatch {
+  border: 1px solid var(--theme-border);
+  border-radius: 4px;
+}
+
+.copy-btn {
+  background: var(--theme-quinary);
+  border: 1px solid var(--theme-border);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  color: var(--theme-quaternary);
+  font-weight: bold;
+}
+
+.copy-btn:hover {
+  background: var(--theme-quaternary);
+  color: var(--theme-tertiary);
+  transform: scale(1.05);
 }
 
 .color-swatch {

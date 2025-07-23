@@ -10,8 +10,7 @@ src/
 │   ├── PokemonCard.vue               # Tarjeta del Pokémon
 │   ├── TypeBadge.vue                 # Badges de tipos
 │   ├── ColorPalette.vue              # Paleta de colores
-│   ├── ExportSection.vue             # Exportación
-│   └── ColorPaletteExtractor.vue     # Subida de imágenes
+│   └── ExportSection.vue             # Exportación
 ├── services/
 │   └── pokeApi.js                    # API de Pokémon
 ├── utils/
@@ -28,9 +27,9 @@ src/
 - **Props**: Ninguna
 - **Emits**: Ninguno
 - **Funciones principales**:
-  - Gestión del modo (API/Upload)
+  - Búsqueda directa de Pokémon (sin pantalla de selección)
   - Aplicación de themes dinámicos
-  - Análisis de colores de imágenes
+  - Análisis de colores de imágenes de Pokémon
 
 ### `PokemonSearch.vue`
 - **Responsabilidad**: Búsqueda de Pokémon y resultados

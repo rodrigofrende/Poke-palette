@@ -4,7 +4,6 @@ Una herramienta web para extraer paletas de colores de Pokémon y exportarlas a 
 
 ## ✨ Características
 
-- **Análisis de Imágenes**: Sube imágenes de Pokémon y extrae automáticamente su paleta de colores
 - **Búsqueda de Pokémon**: Busca y selecciona Pokémon directamente desde la PokeAPI
 - **Extracción Inteligente**: Algoritmo que identifica los colores más representativos de cada Pokémon
 - **Exportación Múltiple**: Exporta paletas a CSS, Tailwind, Figma y JSON
@@ -12,18 +11,13 @@ Una herramienta web para extraer paletas de colores de Pokémon y exportarlas a 
 
 ## 🚀 Cómo Usar
 
-### 1. Seleccionar Pokémon desde la API
-1. Haz clic en "🎯 Seleccionar Pokémon"
+### 1. Buscar y Seleccionar Pokémon
+1. La aplicación se abre directamente en la búsqueda de Pokémon
 2. Busca el Pokémon que quieres analizar
 3. Selecciónalo de la lista
 4. Haz clic en "Generar Paleta de Colores"
 
-### 2. Subir Imagen Personalizada
-1. Haz clic en "📷 Subir Imagen"
-2. Arrastra una imagen o haz clic para seleccionar
-3. Haz clic en "Extraer Paleta de Colores"
-
-### 3. Exportar la Paleta
+### 2. Exportar la Paleta
 Una vez extraída la paleta, puedes exportarla a:
 - **CSS**: Variables CSS personalizadas
 - **Tailwind**: Configuración para Tailwind CSS
@@ -58,7 +52,7 @@ npm run build
 ## 🎯 Funcionalidades Principales
 
 ### Análisis de Colores
-- Extracción automática de los 8 colores más representativos
+- Extracción automática de los 8 colores más representativos de Pokémon
 - Cálculo de porcentaje de uso de cada color
 - Filtrado de píxeles transparentes
 - Cuantización de colores para reducir ruido
@@ -99,7 +93,7 @@ const imageUrl = getPokemonImageUrl(25) // Para Pikachu
 
 ## 🎨 Algoritmo de Extracción de Colores
 
-1. **Carga de Imagen**: La imagen se carga en un canvas HTML5
+1. **Carga de Imagen**: La imagen del Pokémon se carga desde la PokeAPI
 2. **Muestreo de Píxeles**: Se analiza cada 10º píxel para rendimiento
 3. **Filtrado**: Se eliminan píxeles transparentes
 4. **Cuantización**: Los colores se agrupan en rangos de 25 unidades

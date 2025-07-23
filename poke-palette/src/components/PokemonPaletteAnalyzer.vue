@@ -41,6 +41,15 @@
               <h4>{{ formatPokemonName(selectedPokemon.name) }}</h4>
               <p>#{{ selectedPokemon.id }}</p>
             </div>
+            
+            <!-- Botón de limpiar -->
+            <button 
+              @click="clearSelection" 
+              class="clear-btn-display"
+              title="Limpiar selección"
+            >
+              <span class="clear-icon-display">🗑️</span>
+            </button>
           </div>
         </div>
         
@@ -61,13 +70,14 @@
           </div>
         </div>
         
-        <!-- Botón de Mejorar Contraste (solo en paso 3) -->
+        <!-- Botón de Mejorar/Restaurar Contraste (solo en paso 3) -->
         <button 
           v-if="currentStep === 3 && contrastAnalysis.length > 0" 
-          @click="improveGlobalContrast" 
+          @click="isContrastImproved ? handleRestoreTheme() : improveGlobalContrast()" 
           class="improve-btn-compact"
+          :class="{ 'restore': isContrastImproved }"
         >
-          🎯 Mejorar Contraste
+          {{ isContrastImproved ? '🔄 Restaurar Contraste' : '🎯 Mejorar Contraste' }}
         </button>
       </div>
       
@@ -86,50 +96,13 @@
     <div class="main-layout">
       <!-- Contenido principal -->
       <div class="main-content-area">
-        <!-- Paso 1: Selección de Pokémon -->
+        <!-- Paso 1: Búsqueda de Pokémon -->
         <div v-if="currentStep === 1" class="step-content selection-step">
-          <!-- Estado inicial: Mostrar opciones de selección -->
-          <div v-if="!selectedPokemon && !showUpload && !showSearch" class="initial-state">
-            <div class="step-header">
-              <h2>🎯 Selecciona tu Pokémon</h2>
-              <p>Busca en la base de datos o sube tu propia imagen</p>
-            </div>
-            
-            <!-- Opciones de selección -->
-            <div class="selection-options">
-              <!-- Opción 1: Búsqueda de Pokémon -->
-              <div class="option-card" @click="showSearch = true">
-                <div class="option-header">
-                  <span class="option-icon">🔍</span>
-                  <h3>Buscar Pokémon</h3>
-                </div>
-                <p>Encuentra cualquier Pokémon en la base de datos</p>
-                <div class="option-action">
-                  <span class="action-text">Haz clic para buscar</span>
-                </div>
-              </div>
-              
-              <!-- Opción 2: Subir imagen -->
-              <div class="option-card" @click="showUpload = true">
-                <div class="option-header">
-                  <span class="option-icon">📷</span>
-                  <h3>Subir Imagen</h3>
-                </div>
-                <p>Analiza cualquier imagen de Pokémon</p>
-                <div class="option-action">
-                  <span class="action-text">Haz clic para subir</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Estado de búsqueda: Mostrar buscador unificado -->
-          <div v-if="!selectedPokemon && showSearch && !showUpload" class="search-state">
+          <!-- Estado de búsqueda: Mostrar buscador directamente -->
+          <div v-if="!selectedPokemon" class="search-state">
             <div class="search-header">
-              <button @click="showSearch = false" class="back-btn">
-                ← Volver
-              </button>
               <h2>🔍 Buscar Pokémon</h2>
+              <p>Encuentra cualquier Pokémon en la base de datos</p>
             </div>
             
             <div class="search-container">
@@ -140,20 +113,6 @@
                 @update-shiny="updateShiny"
                 @search-error="handleSearchError"
               />
-            </div>
-          </div>
-          
-          <!-- Estado de upload: Mostrar extractor -->
-          <div v-if="!selectedPokemon && showUpload && !showSearch" class="upload-state">
-            <div class="upload-header">
-              <button @click="showUpload = false" class="back-btn">
-                ← Volver
-              </button>
-              <h2>📷 Subir Imagen</h2>
-            </div>
-            
-            <div class="upload-container">
-              <ColorPaletteExtractor />
             </div>
           </div>
           
@@ -194,6 +153,7 @@
               :pokemon-name="selectedPokemon ? formatPokemonName(selectedPokemon.name) : 'la imagen'"
               @apply-theme="handleApplyTheme"
               @restore-theme="handleRestoreTheme"
+              @update-palette="handleUpdatePalette"
             />
             
 
@@ -402,7 +362,6 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { getPokemonDetails, getPokemonSpecies } from '../services/pokeApi.js'
-import ColorPaletteExtractor from './ColorPaletteExtractor.vue'
 import PokemonSearch from './PokemonSearch.vue'
 import PokemonCard from './PokemonCard.vue'
 import ColorPalette from './ColorPalette.vue'
@@ -460,8 +419,7 @@ const openCategories = ref([])
 const activeSection = ref('physical') // Sección por defecto
 const currentTheme = ref(getCurrentTheme())
 const isContrastImproved = ref(false)
-const showUpload = ref(false)
-const showSearch = ref(false)
+const originalTheme = ref(null) // Guardar el tema original cuando se aplica la paleta
 
 // Variables para manejo de errores y loading
 const loadingPokemon = ref(false)
@@ -604,6 +562,11 @@ const selectPokemonFromAPI = async (pokemon) => {
   selectingPokemon.value = true
   loadingPokemon.value = true
   
+  // Resetear estados de contraste al seleccionar nuevo Pokémon
+  isContrastImproved.value = false
+  originalTheme.value = null
+  contrastAnalysis.value = []
+  
   try {
     const [details, species] = await Promise.all([
       getPokemonDetails(pokemon.name),
@@ -669,6 +632,8 @@ const closePokemonCard = () => {
   palette.value = []
   contrastAnalysis.value = []
   isContrastApplied.value = false
+  isContrastImproved.value = false
+  originalTheme.value = null
   
   // Restaurar tema por defecto al cerrar
   restoreDefaultTheme()
@@ -1331,6 +1296,11 @@ function restoreDefaultThemeHandler() {
 }
 
 function improveGlobalContrast() {
+  // Guardar el tema actual antes de mejorarlo
+  if (!isContrastImproved.value) {
+    originalTheme.value = { ...currentTheme.value }
+  }
+  
   const improvedTheme = improveThemeContrast(currentTheme.value)
   applyTheme(improvedTheme)
   currentTheme.value = getCurrentTheme()
@@ -1375,6 +1345,19 @@ const restartFlow = () => {
   // restoreDefaultTheme()
   
   console.log('✅ Estado anterior restaurado (tema aplicado, contrastes originales)');
+}
+
+const clearSelection = () => {
+  // Limpiar completamente la selección y volver al inicio
+  selectedPokemon.value = null
+  palette.value = []
+  contrastAnalysis.value = []
+  currentStep.value = 1
+  isContrastApplied.value = false
+  restoreDefaultTheme()
+  restoreOriginalTextColors()
+  
+  console.log('🏠 Volviendo al inicio - selección limpiada');
 }
 
 // Convert RGB to HSL for better color analysis
@@ -1536,6 +1519,9 @@ const showContrastHint = () => {
 
 // Funciones de gestión de temas
 function handleApplyTheme(colorHexes) {
+  // Guardar el tema actual como original antes de aplicar el nuevo
+  originalTheme.value = { ...currentTheme.value }
+  
   const newTheme = generateThemeFromPalette(colorHexes)
   applyTheme(newTheme)
   currentTheme.value = getCurrentTheme()
@@ -1543,9 +1529,27 @@ function handleApplyTheme(colorHexes) {
 }
 
 function handleRestoreTheme() {
-  restoreDefaultTheme()
-  currentTheme.value = getCurrentTheme()
+  // Restaurar al tema original si existe, sino al tema por defecto
+  if (originalTheme.value) {
+    applyTheme(originalTheme.value)
+    currentTheme.value = getCurrentTheme()
+  } else {
+    restoreDefaultTheme()
+    currentTheme.value = getCurrentTheme()
+  }
   isContrastImproved.value = false
+}
+
+function handleUpdatePalette(updatedPalette) {
+  // Actualizar la paleta con los colores editados
+  palette.value = updatedPalette
+  
+  // Re-analizar el contraste si estamos en el paso 3
+  if (currentStep.value === 3 && updatedPalette.length > 0) {
+    analyzePaletteContrast()
+  }
+  
+  console.log('🎨 Paleta actualizada:', updatedPalette)
 }
 </script>
 
@@ -1972,6 +1976,18 @@ function handleRestoreTheme() {
   border-color: #48bb78;
 }
 
+.improve-btn-compact.restore {
+  background: linear-gradient(135deg, #e53e3e 0%, #f56565 100%);
+  border-color: #e53e3e;
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.improve-btn-compact.restore:hover {
+  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+  border-color: #f56565;
+  box-shadow: 0 6px 16px rgba(229, 62, 62, 0.4);
+}
+
 .main-layout {
   display: flex;
   flex-direction: column;
@@ -1982,98 +1998,14 @@ function handleRestoreTheme() {
   height: 100%;
 }
 
-/* Estilos para las opciones de selección */
-.selection-options {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-  flex-grow: 1;
-  align-items: center;
-  justify-content: center;
-}
 
-.option-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  border: 2px solid var(--theme-border);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.option-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  border-color: var(--theme-primary);
-}
-
-.option-card.active {
-  border-color: var(--theme-primary);
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.2);
-}
-
-.option-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.option-icon {
-  font-size: 1.5rem;
-}
-
-.option-header h3 {
-  margin: 0;
-  color: var(--theme-quaternary);
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.option-card p {
-  color: var(--theme-senary);
-  margin-bottom: 20px;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.upload-btn {
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.upload-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
-}
 
 .search-container {
   margin-top: 15px;
 }
 
-.upload-container {
-  margin-top: 15px;
-}
-
 /* Estados de la interfaz */
-.initial-state,
 .search-state,
-.upload-state,
 .selected-state {
   animation: fadeIn 0.3s ease-in-out;
   height: 100%;
@@ -2088,7 +2020,6 @@ function handleRestoreTheme() {
 
 /* Headers de estado */
 .search-header,
-.upload-header,
 .selected-header {
   display: flex;
   align-items: center;
@@ -2123,7 +2054,6 @@ function handleRestoreTheme() {
 }
 
 .search-header h2,
-.upload-header h2,
 .selected-header h2 {
   margin: 0;
   color: var(--theme-quaternary);
@@ -2142,19 +2072,7 @@ function handleRestoreTheme() {
   font-size: 1rem;
 }
 
-/* Acción de las opciones */
-.option-action {
-  margin-top: 15px;
-  text-align: center;
-}
 
-.action-text {
-  color: var(--theme-primary);
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
 
 .main-content-area {
   display: flex;
@@ -2222,15 +2140,7 @@ function handleRestoreTheme() {
   gap: 15px;
 }
 
-.upload-container {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
+
 
 .palette-section {
   margin-bottom: 20px; /* Reducido de 30px */
@@ -3313,36 +3223,12 @@ function handleRestoreTheme() {
     font-size: 0.8rem;
   }
   
-  /* Estilos responsive para las opciones de selección */
-  .selection-options {
-    grid-template-columns: 1fr;
-    gap: 15px;
-    max-width: 100%;
-    flex-grow: 1;
-    align-items: center;
-    justify-content: center;
-  }
+
   
-  .option-card {
-    padding: 20px;
-  }
-  
-  .option-header h3 {
-    font-size: 1.1rem;
-  }
-  
-  .option-card p {
-    font-size: 0.85rem;
-  }
-  
-  .upload-btn {
-    padding: 10px 20px;
-    font-size: 0.85rem;
-  }
+
   
   /* Estilos responsive para los nuevos estados */
   .search-header,
-  .upload-header,
   .selected-header {
     flex-direction: column;
     gap: 10px;
@@ -3355,7 +3241,6 @@ function handleRestoreTheme() {
   }
   
   .search-header h2,
-  .upload-header h2,
   .selected-header h2 {
     font-size: 1.3rem;
   }
@@ -3512,35 +3397,14 @@ function handleRestoreTheme() {
     font-size: 13px;
   }
   
-  /* Estilos responsive para las opciones de selección en pantallas pequeñas */
-  .selection-options {
-    gap: 12px;
-    max-width: 100%;
-    flex-grow: 1;
-    align-items: center;
-    justify-content: center;
-  }
+
   
-  .option-card {
-    padding: 16px;
-  }
+
   
-  .option-header h3 {
-    font-size: 1rem;
-  }
-  
-  .option-card p {
-    font-size: 0.8rem;
-  }
-  
-  .upload-btn {
-    padding: 8px 16px;
-    font-size: 0.8rem;
-  }
+
   
   /* Estilos responsive para pantallas pequeñas */
   .search-header,
-  .upload-header,
   .selected-header {
     gap: 8px;
   }
@@ -3551,7 +3415,6 @@ function handleRestoreTheme() {
   }
   
   .search-header h2,
-  .upload-header h2,
   .selected-header h2 {
     font-size: 1.2rem;
   }
@@ -3560,9 +3423,7 @@ function handleRestoreTheme() {
     font-size: 0.85rem;
   }
   
-  .action-text {
-    font-size: 0.8rem;
-  }
+
 }
 
 /* Estilos para la imagen fija del Pokémon seleccionado */
@@ -3574,23 +3435,24 @@ function handleRestoreTheme() {
 .pokemon-display-card {
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
   border-radius: 12px;
-  padding: 8px 12px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   border: 2px solid var(--theme-border);
   backdrop-filter: blur(10px);
-  max-width: 250px;
+  max-width: 280px;
+  min-width: 260px;
 }
 
 .pokemon-display-image {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   object-fit: contain;
   background: rgba(255, 255, 255, 0.1);
-  padding: 3px;
+  padding: 4px;
 }
 
 .pokemon-display-info {
@@ -3599,17 +3461,58 @@ function handleRestoreTheme() {
 }
 
 .pokemon-display-info h4 {
-  margin: 0 0 2px 0;
+  margin: 0 0 3px 0;
   color: var(--theme-quaternary);
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: bold;
 }
 
 .pokemon-display-info p {
   margin: 0;
   color: var(--theme-senary);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   opacity: 0.8;
+}
+
+/* Botón de limpiar en el display card */
+.clear-btn-display {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--theme-quinary);
+  border: 1px solid var(--theme-border);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.clear-btn-display:hover {
+  background: var(--theme-quaternary);
+  border-color: var(--theme-primary);
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.clear-btn-display:active {
+  transform: scale(0.95);
+}
+
+.clear-icon-display {
+  font-size: 10px;
+  color: var(--theme-quaternary);
+  line-height: 1;
+}
+
+/* Hacer el contenedor del display card relativo para el posicionamiento */
+.pokemon-display-card {
+  position: relative;
 }
 
 /* Estilos para el loader overlay */
