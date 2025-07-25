@@ -1,5 +1,5 @@
 <template>
-  <div class="results-section animate-in">
+  <div class="palette-container">
     <h3>Paleta de Colores <InfoTooltip text="Muestra los colores dominantes extraídos de la imagen. Los colores están ordenados por frecuencia de aparición. Haz clic en cualquier color para copiar su código hexadecimal al portapapeles." size="medium" /></h3>
     
     <!-- Color palette -->
@@ -303,10 +303,10 @@ const restoreDefaultTheme = () => {
 </script>
 
 <style scoped>
-.results-section {
+.palette-container {
   background: var(--theme-tertiary);
   border-radius: 15px;
-  padding: 20px;
+  padding: 0;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--theme-border);
   max-height: calc(100vh - 200px);
@@ -315,7 +315,7 @@ const restoreDefaultTheme = () => {
   flex-direction: column;
 }
 
-.results-section h3 {
+.palette-container h3 {
   color: var(--theme-quaternary);
   margin-bottom: 20px;
   text-align: center;
@@ -323,6 +323,7 @@ const restoreDefaultTheme = () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 20px 20px 0 20px;
 }
 
 .info-icon {
@@ -343,11 +344,11 @@ const restoreDefaultTheme = () => {
 .palette-display {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  gap: 15px;
   margin-bottom: 20px;
   max-height: calc(100vh - 400px);
   overflow-y: auto;
-  padding-right: 5px;
+  padding: 0 20px;
   scrollbar-width: thin;
   scrollbar-color: var(--theme-border) transparent;
 }
@@ -372,14 +373,14 @@ const restoreDefaultTheme = () => {
 .color-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 15px;
+  padding: 15px;
   border-radius: 10px;
   background: var(--theme-quinary);
   transition: all 0.3s ease;
   border: 1px solid var(--theme-border);
   position: relative;
-  min-height: 70px;
+  min-height: 80px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -397,7 +398,7 @@ const restoreDefaultTheme = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .color-swatch {
@@ -506,52 +507,51 @@ const restoreDefaultTheme = () => {
 .color-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
-  justify-content: center;
-  margin-left: auto;
-  padding-left: 10px;
 }
 
 .action-btn {
-  background: var(--theme-quinary);
-  border: 1px solid var(--theme-border);
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 12px;
+  font-size: 1rem;
+  background: var(--theme-quinary);
+  border: 1px solid var(--theme-border);
   color: var(--theme-quaternary);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .action-btn:hover {
-  background: var(--theme-quaternary);
-  color: var(--theme-tertiary);
   transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  border-color: var(--theme-primary);
 }
 
-.action-btn:active {
-  transform: scale(0.95);
+.action-btn.copy-btn:hover {
+  background: var(--theme-primary);
+  color: var(--theme-tertiary);
 }
 
-/* Estilos para el botón de restaurar */
-.restore-btn {
+.action-btn.restore-btn {
   opacity: 0;
   transform: scale(0.8);
-  pointer-events: none;
   transition: all 0.3s ease;
 }
 
-.restore-btn.visible {
+.action-btn.restore-btn.visible {
   opacity: 1;
   transform: scale(1);
-  pointer-events: auto;
+}
+
+.action-btn.restore-btn:hover {
+  background: var(--theme-secondary);
+  color: var(--theme-tertiary);
 }
 
 /* Estilos específicos para cada tipo de botón */
@@ -587,26 +587,27 @@ const restoreDefaultTheme = () => {
 .color-info {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
+  flex: 1;
 }
 
 .color-hex {
-  font-weight: bold;
-  font-family: monospace;
   font-size: 1.1rem;
+  font-weight: bold;
   color: var(--theme-quaternary);
+  font-family: 'Courier New', monospace;
 }
 
 .color-rgb {
   font-size: 0.9rem;
-  color: var(--theme-quaternary);
-  opacity: 0.7;
+  color: var(--theme-senary);
+  font-family: 'Courier New', monospace;
 }
 
 .color-percentage {
-  font-size: 0.8rem;
-  color: var(--theme-quaternary);
-  opacity: 0.5;
+  font-size: 0.85rem;
+  color: var(--theme-primary);
+  font-weight: 600;
 }
 
 .palette-info {
@@ -640,6 +641,7 @@ const restoreDefaultTheme = () => {
   justify-content: center;
   flex-wrap: wrap;
   flex-shrink: 0;
+  padding: 0 20px 20px 20px;
 }
 
 .button-container {
@@ -822,14 +824,14 @@ const restoreDefaultTheme = () => {
     font-size: 11px;
   }
   
-  .results-section {
+  .palette-container {
     padding: 15px;
     max-height: calc(100vh - 150px);
   }
 }
 
 /* Animación de entrada para el componente ColorPalette */
-.results-section.animate-in {
+.palette-container.animate-in {
   animation: paletteSlideIn 0.8s ease-out 0.3s both;
 }
 

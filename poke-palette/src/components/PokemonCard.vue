@@ -9,7 +9,7 @@
       <div class="pokemon-header">
         <div class="pokemon-image-container">
           <img 
-            :src="pokemon.imageUrl" 
+            :src="pokemonImageUrl" 
             :alt="pokemon.name"
             class="pokemon-image"
             loading="lazy"
@@ -36,8 +36,8 @@
           <div class="shiny-toggle-compact">
             <label class="toggle-label-compact">
               <input 
-                :checked="isShiny"
-                @change="$emit('update-shiny', $event.target.checked)"
+                :checked="localIsShiny"
+                @change="handleShinyToggle($event.target.checked)"
                 type="checkbox" 
                 class="toggle-input-compact"
               />
@@ -184,6 +184,32 @@ const emit = defineEmits(['analyze', 'image-selected', 'close', 'update-shiny'])
 const selectedImage = ref(null)
 const openCategories = ref([])
 const activeSection = ref('info') // Sección por defecto
+
+// Estado local para el toggle shiny
+const localIsShiny = ref(props.isShiny)
+
+// Watcher para sincronizar el estado local con el prop
+watch(() => props.isShiny, (newValue) => {
+  localIsShiny.value = newValue
+})
+
+// Computed para la URL de la imagen
+const pokemonImageUrl = computed(() => {
+  if (!props.pokemon) return ''
+  
+  const baseUrl = localIsShiny.value 
+    ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${props.pokemon.id}.png`
+    : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${props.pokemon.id}.png`
+  
+  return baseUrl
+})
+
+// Método para manejar el cambio del toggle
+const handleShinyToggle = (checked) => {
+  console.log('🔄 Toggle shiny cambiado:', checked)
+  localIsShiny.value = checked
+  emit('update-shiny', checked)
+}
 
 // Definición de secciones
 const sections = [
@@ -416,18 +442,17 @@ const toggleCategory = (category) => {
 .selected-pokemon {
   display: flex;
   justify-content: center;
-  height: 100vh;
-  max-height: 100vh;
-  overflow: visible;
-  padding: 20px;
+  padding: 18px;
+  min-height: 0;
+  flex: 1;
 }
 
 .pokemon-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
   background: var(--theme-tertiary);
-  padding: 15px;
+  padding: 18px;
   border-radius: 20px;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
   max-width: 800px;
@@ -435,9 +460,8 @@ const toggleCategory = (category) => {
   border: 1px solid var(--theme-border);
   position: relative;
   height: fit-content;
-  max-height: calc(100vh - 40px);
-  overflow: visible;
   min-height: 0;
+  overflow: visible;
 }
 
 .close-btn {
@@ -478,16 +502,16 @@ const toggleCategory = (category) => {
 .pokemon-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
-  padding: 0 5px;
+  gap: 18px;
+  margin-bottom: 15px;
+  padding: 0;
   flex-shrink: 0;
 }
 
 .pokemon-image-container {
   position: relative;
   flex-shrink: 0;
-  margin-right: 15px;
+  margin-right: 0;
 }
 
 .pokemon-image {
@@ -673,10 +697,9 @@ const toggleCategory = (category) => {
 /* Navegación de secciones */
 .section-navigation {
   display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 5px;
-  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 0;
   flex-shrink: 0;
 }
 
@@ -721,13 +744,12 @@ const toggleCategory = (category) => {
 
 /* Contenido de secciones */
 .section-content {
-  flex-grow: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 15px;
   min-height: 0;
-  max-height: 385px; /* Altura reducida para ver bordes completos */
+  overflow: auto;
 }
 
 /* Contenedor de información agrupada */
@@ -743,31 +765,35 @@ const toggleCategory = (category) => {
   max-height: 385px; /* Altura reducida para ver bordes completos */
 }
 
-.info-section {
-  background: var(--theme-quinary);
-  border-radius: 12px;
-  padding: 12px;
-  border: 1px solid var(--theme-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
 .section-panel {
-  animation: fadeIn 0.4s ease-out;
-  height: 100%;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  gap: 15px;
+  padding: 0;
+  background: var(--theme-quinary);
+  border-radius: 15px;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.info-section {
+  padding: 18px;
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.info-section:last-child {
+  border-bottom: none;
+}
+
+.info-section h4 {
+  color: var(--theme-quaternary);
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .pokemon-physical-info,
@@ -800,47 +826,36 @@ const toggleCategory = (category) => {
 
 .physical-grid {
   display: grid;
-  gap: 6px;
-  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
 }
 
 .physical-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 10px 15px;
   background: var(--theme-tertiary);
   border-radius: 8px;
   border: 1px solid var(--theme-border);
-  color: var(--theme-quaternary);
-  font-weight: 500;
   transition: all 0.3s ease;
-  min-height: 40px;
 }
 
 .physical-item:hover {
-  transform: translateX(5px);
+  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .physical-label {
-  font-size: 0.95rem;
-  color: var(--theme-quaternary);
   font-weight: 600;
-  opacity: 0.8;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  flex-shrink: 0;
-  min-width: 0;
+  color: var(--theme-quaternary);
+  font-size: 0.9rem;
 }
 
 .physical-value {
-  font-size: 0.95rem;
-  color: var(--theme-quaternary);
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  text-align: right;
-  flex-shrink: 0;
-  min-width: 0;
+  font-weight: bold;
+  color: var(--theme-primary);
+  font-size: 0.9rem;
 }
 
 .description-text {
