@@ -14,6 +14,7 @@
             class="pokemon-image"
             loading="lazy"
             @error="handleImageError"
+            @click="openImageModal(pokemonImageUrl, formatPokemonName(pokemon.name))"
           />
         </div>
         
@@ -135,6 +136,7 @@
                         class="gallery-image"
                         loading="lazy"
                         @error="handleImageError"
+                        @click.stop="openImageModal(image.url, `${formatPokemonName(pokemon.name)} - ${image.name}`)"
                       />
                       <div class="gallery-overlay">
                         <span class="gallery-label">{{ image.name }}</span>
@@ -151,11 +153,21 @@
         </div>
       </div>
     </div>
+    
+    <!-- Modal para imagen amplificada -->
+    <ImageModal
+      :is-visible="isModalVisible"
+      :image-url="modalImageUrl"
+      :image-alt="modalImageName"
+      :image-name="modalImageName"
+      @close="closeImageModal"
+    />
   </div>
 </template>
 
 <script setup>
 import TypeBadge from './TypeBadge.vue'
+import ImageModal from './ImageModal.vue'
 import { 
   formatPokemonName, 
   formatColorName, 
@@ -187,6 +199,11 @@ const activeSection = ref('info') // Sección por defecto
 
 // Estado local para el toggle shiny
 const localIsShiny = ref(props.isShiny)
+
+// Modal state
+const isModalVisible = ref(false)
+const modalImageUrl = ref('')
+const modalImageName = ref('')
 
 // Watcher para sincronizar el estado local con el prop
 watch(() => props.isShiny, (newValue) => {
@@ -392,6 +409,16 @@ const selectImage = (image) => {
   emit('image-selected', image)
 }
 
+const openImageModal = (imageUrl, imageName) => {
+  modalImageUrl.value = imageUrl
+  modalImageName.value = imageName
+  isModalVisible.value = true
+}
+
+const closeImageModal = () => {
+  isModalVisible.value = false
+}
+
 const handleImageError = (event) => {
   // Hide the entire gallery item container if image fails to load
   const galleryItem = event.target.closest('.gallery-item')
@@ -523,6 +550,7 @@ const toggleCategory = (category) => {
   padding: 10px;
   transition: transform 0.3s ease;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
 }
 
 .pokemon-image:hover {
@@ -1000,6 +1028,7 @@ const toggleCategory = (category) => {
   object-fit: contain;
   padding: 15px;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .gallery-overlay {

@@ -1,10 +1,5 @@
 <template>
   <div class="step-container">
-    <div class="step-header">
-      <h2>📊 Análisis de Contraste</h2>
-      <p>Evalúa la legibilidad y accesibilidad de los colores</p>
-    </div>
-    
     <div class="step-content">
       <div v-if="contrastAnalysis.length > 0">
         <!-- Navegación de tabs -->

@@ -28,28 +28,33 @@
         
         <!-- Contenido central -->
         <div class="breadcrumb-center">
-          <!-- Imagen fija del Pokémon seleccionado -->
-          <div v-if="selectedPokemon" class="selected-pokemon-display">
-            <div class="pokemon-display-card">
-              <img 
-                :src="selectedPokemon.imageUrl" 
-                :alt="selectedPokemon.name"
-                class="pokemon-display-image"
-              />
-              <div class="pokemon-display-info">
-                <h4>{{ formatPokemonName(selectedPokemon.name) }}</h4>
-                <p>#{{ selectedPokemon.id }}</p>
-              </div>
-              
-              <!-- Botón de limpiar -->
-              <button 
-                @click="clearSelection" 
-                class="clear-btn-display"
-                title="Limpiar selección"
-              >
-                <span class="clear-icon-display">✖️</span>
-              </button>
+          <!-- Información del step actual -->
+          <div class="step-header-info">
+            <div class="step-header-icon">{{ getStepIcon(currentStep) }}</div>
+            <div class="step-header-text">
+              <h3 class="step-header-title">{{ getStepTitle(currentStep) }}</h3>
+              <p class="step-header-subtitle">{{ getStepSubtitle(currentStep) }}</p>
             </div>
+          </div>
+          
+          <!-- Información del Pokémon en el header -->
+          <div v-if="selectedPokemon" class="pokemon-header-info">
+            <img 
+              :src="selectedPokemon.imageUrl" 
+              :alt="selectedPokemon.name"
+              class="pokemon-header-image"
+            />
+            <div class="pokemon-header-text">
+              <span class="pokemon-header-name">{{ formatPokemonName(selectedPokemon.name) }}</span>
+              <span class="pokemon-header-id">#{{ selectedPokemon.id }}</span>
+            </div>
+            <button 
+              @click="clearSelection" 
+              class="clear-btn-header"
+              title="Limpiar selección"
+            >
+              ✖️
+            </button>
           </div>
           
           <div class="breadcrumb-steps">
@@ -725,6 +730,33 @@ const getStepName = (step) => {
   }
 }
 
+const getStepIcon = (step) => {
+  switch (step) {
+    case 1: return '🔍'
+    case 2: return '🎨'
+    case 3: return '📊'
+    default: return '❓'
+  }
+}
+
+const getStepTitle = (step) => {
+  switch (step) {
+    case 1: return 'Buscar Pokémon'
+    case 2: return 'Generar Paleta'
+    case 3: return 'Análisis de Contraste'
+    default: return 'Paso desconocido'
+  }
+}
+
+const getStepSubtitle = (step) => {
+  switch (step) {
+    case 1: return 'Encuentra cualquier Pokémon en la base de datos'
+    case 2: return 'Analiza la imagen y extrae los colores dominantes'
+    case 3: return 'Evalúa la legibilidad y accesibilidad de los colores'
+    default: return 'Descripción del paso'
+  }
+}
+
 // Inicializar tema al cargar
 onMounted(() => {
   console.log('🔄 Restaurando tema por defecto al cargar la página...')
@@ -741,10 +773,10 @@ onMounted(() => {
   border-radius: 20px;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 10px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 40px);
+  height: calc(100vh - 32px);
   overflow: hidden;
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
 }
@@ -766,6 +798,7 @@ onMounted(() => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  gap: 12px;
 }
 
 @keyframes fadeIn {
@@ -784,16 +817,16 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
-  border-radius: 15px;
+  border-radius: 12px;
   padding: 8px 16px;
   border: 2px solid var(--theme-border);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
   backdrop-filter: blur(15px);
   width: 100%;
   max-width: none;
   margin: 0;
-  gap: 20px;
+  gap: 15px;
   flex-wrap: wrap;
 }
 
@@ -804,23 +837,24 @@ onMounted(() => {
   gap: 20px;
   flex: 1;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .breadcrumb-steps {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
   justify-content: center;
 }
 
 .breadcrumb-step {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
+  gap: 5px;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--theme-quaternary);
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 8px;
   transition: all 0.3s ease;
   position: relative;
@@ -900,7 +934,7 @@ onMounted(() => {
 .step-label {
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
 }
 
 .breadcrumb-arrow {
@@ -911,18 +945,18 @@ onMounted(() => {
 
 /* Botones de navegación en extremos */
 .nav-btn-compact {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 100px;
+  min-width: 90px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -961,9 +995,9 @@ onMounted(() => {
 }
 
 .improve-btn-compact {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -972,10 +1006,10 @@ onMounted(() => {
   border: 2px solid #38a169;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  min-width: 140px;
+  min-width: 130px;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
 }
@@ -1002,11 +1036,11 @@ onMounted(() => {
 .step-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 15px;
+  gap: 15px;
+  padding: 12px;
   background: var(--theme-quinary);
-  border-radius: 15px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--theme-border);
   flex: 1;
   overflow: auto;
@@ -1014,89 +1048,123 @@ onMounted(() => {
   height: 100%;
 }
 
-/* Estilos para la imagen fija del Pokémon seleccionado */
-.selected-pokemon-display {
-  display: flex;
-  justify-content: center;
-}
-
-.pokemon-display-card {
-  background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
-  border-radius: 12px;
-  padding: 12px 16px;
+/* Estilos para la información del step actual en el header */
+.step-header-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 2px solid var(--theme-border);
-  backdrop-filter: blur(10px);
-  max-width: 280px;
-  min-width: 260px;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  border-radius: 10px;
+  padding: 8px 12px;
+  border: 2px solid var(--theme-primary);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  color: var(--theme-tertiary);
+  min-width: 200px;
+}
+
+.step-header-icon {
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+}
+
+.step-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.step-header-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--theme-tertiary);
+}
+
+.step-header-subtitle {
+  margin: 0;
+  font-size: 0.7rem;
+  opacity: 0.9;
+  line-height: 1.2;
+  color: var(--theme-tertiary);
+}
+
+/* Estilos para la información del Pokémon en el header */
+.pokemon-header-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
+  border-radius: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   position: relative;
 }
 
-.pokemon-display-image {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+.pokemon-header-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   object-fit: contain;
   background: rgba(255, 255, 255, 0.1);
-  padding: 4px;
+  padding: 2px;
 }
 
-.pokemon-display-info {
-  flex: 1;
-  text-align: left;
+.pokemon-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
-.pokemon-display-info h4 {
-  margin: 0 0 3px 0;
+.pokemon-header-name {
   color: var(--theme-quaternary);
-  font-size: 1rem;
-  font-weight: bold;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
-.pokemon-display-info p {
-  margin: 0;
+.pokemon-header-id {
   color: var(--theme-senary);
-  font-size: 0.85rem;
+  font-size: 0.65rem;
   opacity: 0.8;
+  line-height: 1;
 }
 
-/* Botón de limpiar en el display card */
-.clear-btn-display {
-  position: absolute;
-  top: -4px;
-  right: -4px;
+.clear-btn-header {
   background: var(--theme-quinary);
   border: 1px solid var(--theme-border);
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  z-index: 10;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  font-size: 8px;
+  color: var(--theme-quaternary);
+  line-height: 1;
+  padding: 0;
 }
 
-.clear-btn-display:hover {
+.clear-btn-header:hover {
   background: var(--theme-quaternary);
   border-color: var(--theme-primary);
   transform: scale(1.1);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-.clear-btn-display:active {
+.clear-btn-header:active {
   transform: scale(0.95);
-}
-
-.clear-icon-display {
-  font-size: 10px;
-  color: var(--theme-quaternary);
-  line-height: 1;
 }
 
 /* Animaciones para el paso 2: Generar Paleta */
@@ -1176,8 +1244,8 @@ onMounted(() => {
   .progress-breadcrumb {
     flex-direction: column;
     gap: 12px;
-    padding: 12px;
-    margin-bottom: 15px;
+    padding: 10px;
+    margin-bottom: 12px;
   }
   
   .breadcrumb-center {
@@ -1225,7 +1293,7 @@ onMounted(() => {
   }
   
   .main-content {
-    gap: 15px;
+    gap: 10px;
     height: 100%;
     overflow: hidden;
   }
@@ -1235,26 +1303,53 @@ onMounted(() => {
   }
   
   .step-content {
-    padding: 12px;
+    padding: 8px;
   }
   
-  /* Estilos responsive para la imagen fija del Pokémon */
-  .pokemon-display-card {
-    max-width: 200px;
-    padding: 6px 8px;
+  /* Estilos responsive para la información del step actual */
+  .step-header-info {
+    padding: 6px 10px;
+    gap: 8px;
+    min-width: 180px;
   }
   
-  .pokemon-display-image {
-    width: 35px;
-    height: 35px;
+  .step-header-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
   }
   
-  .pokemon-display-info h4 {
+  .step-header-title {
     font-size: 0.8rem;
   }
   
-  .pokemon-display-info p {
+  .step-header-subtitle {
+    font-size: 0.65rem;
+  }
+  
+  /* Estilos responsive para la información del Pokémon en el header */
+  .pokemon-header-info {
+    padding: 3px 6px;
+    gap: 6px;
+  }
+  
+  .pokemon-header-image {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .pokemon-header-name {
     font-size: 0.7rem;
+  }
+  
+  .pokemon-header-id {
+    font-size: 0.6rem;
+  }
+  
+  .clear-btn-header {
+    width: 14px;
+    height: 14px;
+    font-size: 7px;
   }
 }
 
@@ -1264,7 +1359,7 @@ onMounted(() => {
   }
   
   .progress-breadcrumb {
-    padding: 12px;
+    padding: 10px;
     gap: 12px;
   }
   
@@ -1285,25 +1380,51 @@ onMounted(() => {
   }
   
   .step-content {
-    padding: 10px;
+    padding: 8px;
   }
   
-  .pokemon-display-card {
-    max-width: 180px;
-    padding: 4px 6px;
+  .step-header-info {
+    padding: 4px 8px;
+    gap: 6px;
+    min-width: 160px;
   }
   
-  .pokemon-display-image {
-    width: 30px;
-    height: 30px;
+  .step-header-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 0.9rem;
   }
   
-  .pokemon-display-info h4 {
+  .step-header-title {
     font-size: 0.75rem;
   }
   
-  .pokemon-display-info p {
+  .step-header-subtitle {
+    font-size: 0.6rem;
+  }
+  
+  .pokemon-header-info {
+    padding: 2px 4px;
+    gap: 4px;
+  }
+  
+  .pokemon-header-image {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .pokemon-header-name {
     font-size: 0.65rem;
+  }
+  
+  .pokemon-header-id {
+    font-size: 0.55rem;
+  }
+  
+  .clear-btn-header {
+    width: 12px;
+    height: 12px;
+    font-size: 6px;
   }
 }
 </style>

@@ -50,15 +50,15 @@ import PokemonPaletteAnalyzer from './components/PokemonPaletteAnalyzer.vue'
 
 main {
   flex: 1;
-  padding: 20px;
+  padding: 12px;
 }
 
 .app-footer {
   text-align: center;
-  padding: 20px;
+  padding: 12px;
   color: var(--theme-tertiary);
   opacity: 0.8;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 @media (max-width: 768px) {

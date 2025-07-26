@@ -1,10 +1,5 @@
 <template>
   <div class="step-container">
-    <div class="step-header">
-      <h2>🎨 Generar Paleta</h2>
-      <p>Analiza la imagen y extrae los colores dominantes</p>
-    </div>
-    
     <div class="step-content">
       <div v-if="palette.length > 0">
         <ColorPalette 

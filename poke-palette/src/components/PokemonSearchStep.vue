@@ -1,10 +1,5 @@
 <template>
   <div class="step-container">
-    <div class="step-header">
-      <h2>🔍 Buscar Pokémon</h2>
-      <p>Encuentra cualquier Pokémon en la base de datos</p>
-    </div>
-    
     <div class="step-content">
       <!-- Estado de búsqueda: Mostrar buscador directamente -->
       <div v-if="!currentSelectedPokemon">
