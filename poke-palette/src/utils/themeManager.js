@@ -1,18 +1,19 @@
 // Sistema de gestión de temas dinámicos para Pokémon Palette Analyzer
 import { calculateLuminance } from './contrastUtils.js'
+import { DEFAULT_COLORS, THEME_CONFIG } from '../config/constants.js'
 
 // Tema por defecto
 const defaultTheme = {
-  primary: '#667eea',
-  secondary: '#764ba2',
-  tertiary: '#ffffff',
-  quaternary: '#2d3748',
-  quinary: '#f7fafc',
-  border: '#e2e8f0',
-  borderHover: '#cbd5e0',
-  senary: '#a0aec0',
-  septenary: '#718096',
-  octonary: '#4a5568'
+  primary: DEFAULT_COLORS.PRIMARY,
+  secondary: DEFAULT_COLORS.SECONDARY,
+  tertiary: DEFAULT_COLORS.TERTIARY,
+  quaternary: DEFAULT_COLORS.QUATERNARY,
+  quinary: DEFAULT_COLORS.QUINARY,
+  border: DEFAULT_COLORS.BORDER,
+  borderHover: DEFAULT_COLORS.BORDER_HOVER,
+  senary: DEFAULT_COLORS.SENARY,
+  septenary: DEFAULT_COLORS.SEPTENARY,
+  octonary: DEFAULT_COLORS.OCTONARY
 }
 
 // Tema actual
@@ -36,7 +37,7 @@ export function applyTheme(theme) {
   root.style.setProperty('--theme-octonary', currentTheme.octonary)
   
   // Guardar en localStorage
-  localStorage.setItem('pokemon-palette-theme', JSON.stringify(currentTheme))
+  localStorage.setItem(THEME_CONFIG.STORAGE_KEY, JSON.stringify(currentTheme))
 }
 
 // Función para restaurar el tema por defecto
@@ -134,7 +135,7 @@ export function improveThemeContrast(theme) {
 // Función para cargar el tema guardado
 export function loadSavedTheme() {
   try {
-    const savedTheme = localStorage.getItem('pokemon-palette-theme')
+    const savedTheme = localStorage.getItem(THEME_CONFIG.STORAGE_KEY)
     if (savedTheme) {
       const theme = JSON.parse(savedTheme)
       applyTheme(theme)

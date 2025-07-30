@@ -1,6 +1,5 @@
 // Servicio para interactuar con la PokeAPI
-// Base URL de la PokeAPI
-const BASE_URL = 'https://pokeapi.co/api/v2';
+import { API_CONFIG } from '../config/constants.js'
 
 /**
  * Obtiene una lista de Pokémon desde la PokeAPI
@@ -8,18 +7,18 @@ const BASE_URL = 'https://pokeapi.co/api/v2';
  * @param {number} offset - Número de Pokémon a saltar
  * @returns {Promise<Object>} Lista de Pokémon
  */
-export const getPokemonList = async (limit = 151, offset = 0) => {
+export const getPokemonList = async (limit = API_CONFIG.DEFAULT_POKEMON_LIMIT, offset = 0) => {
   try {
     // Validar parámetros
-    if (limit < 1 || limit > 1025) {
-      throw new Error('El límite debe estar entre 1 y 1025');
+    if (limit < 1 || limit > API_CONFIG.MAX_POKEMON_LIMIT) {
+      throw new Error(`El límite debe estar entre 1 y ${API_CONFIG.MAX_POKEMON_LIMIT}`);
     }
     
     if (offset < 0) {
       throw new Error('El offset no puede ser negativo');
     }
     
-    const response = await fetch(`${BASE_URL}/pokemon?limit=${limit}&offset=${offset}`);
+    const response = await fetch(`${API_CONFIG.BASE_URL}/pokemon?limit=${limit}&offset=${offset}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -39,7 +38,7 @@ export const getPokemonList = async (limit = 151, offset = 0) => {
  */
 export const getPokemonDetails = async (identifier) => {
   try {
-    const response = await fetch(`${BASE_URL}/pokemon/${identifier}`);
+    const response = await fetch(`${API_CONFIG.BASE_URL}/pokemon/${identifier}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -60,7 +59,7 @@ export const getPokemonDetails = async (identifier) => {
  */
 export const getPokemonSpecies = async (identifier) => {
   try {
-    const response = await fetch(`${BASE_URL}/pokemon-species/${identifier}`);
+    const response = await fetch(`${API_CONFIG.BASE_URL}/pokemon-species/${identifier}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -81,7 +80,7 @@ export const getPokemonSpecies = async (identifier) => {
  */
 export const getPokemonType = async (identifier) => {
   try {
-    const response = await fetch(`${BASE_URL}/type/${identifier}`);
+    const response = await fetch(`${API_CONFIG.BASE_URL}/type/${identifier}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -101,7 +100,7 @@ export const getPokemonType = async (identifier) => {
  */
 export const getPokemonTypes = async () => {
   try {
-    const response = await fetch(`${BASE_URL}/type`);
+    const response = await fetch(`${API_CONFIG.BASE_URL}/type`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -123,9 +122,9 @@ export const getPokemonTypes = async () => {
  */
 export const getPokemonImageUrl = (id, isShiny = false) => {
   if (isShiny) {
-    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`;
+    return `${API_CONFIG.SPRITE_BASE_URL}/shiny/${id}.png`;
   }
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+  return `${API_CONFIG.IMAGE_BASE_URL}/${id}.png`;
 };
 
 /**
@@ -136,9 +135,9 @@ export const getPokemonImageUrl = (id, isShiny = false) => {
  */
 export const getPokemonSpriteUrl = (id, isShiny = false) => {
   if (isShiny) {
-    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/${id}.png`;
+    return `${API_CONFIG.SPRITE_BASE_URL}/shiny/${id}.png`;
   }
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+  return `${API_CONFIG.SPRITE_BASE_URL}/${id}.png`;
 };
 
 /**
@@ -172,10 +171,10 @@ export const getPokemonCompleteInfo = async (identifier, isShiny = false) => {
  */
 export const getRandomPokemon = async () => {
   try {
-    // Generar un ID aleatorio entre 1 y 1025
-    const randomId = Math.floor(Math.random() * 1025) + 1;
+    // Generar un ID aleatorio entre 1 y el límite máximo
+    const randomId = Math.floor(Math.random() * API_CONFIG.MAX_POKEMON_LIMIT) + 1;
     
-    const response = await fetch(`${BASE_URL}/pokemon/${randomId}`);
+    const response = await fetch(`${API_CONFIG.BASE_URL}/pokemon/${randomId}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

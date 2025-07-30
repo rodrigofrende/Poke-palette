@@ -1,5 +1,7 @@
 // Gestor de la pantalla de bienvenida
-const WELCOME_FLAG_KEY = 'pokemon-palette-welcome-shown'
+import { THEME_CONFIG } from '../config/constants.js'
+
+const WELCOME_FLAG_KEY = THEME_CONFIG.WELCOME_FLAG_KEY
 
 /**
  * Verifica si la pantalla de bienvenida ya fue mostrada

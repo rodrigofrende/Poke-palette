@@ -182,6 +182,12 @@ import {
   rgbToHex
 } from '../utils/contrastUtils.js'
 import { 
+  rgbToHex as rgbToHexFromUtils,
+  rgbToHsl,
+  calculateColorDifference,
+  selectDiverseColors
+} from '../utils/colorUtils.js'
+import { 
   applyTheme, 
   restoreDefaultTheme, 
   generateThemeFromPalette, 
@@ -189,21 +195,7 @@ import {
   getCurrentTheme 
 } from '../utils/themeManager.js'
 import { shouldShowWelcome, markWelcomeAsSeen } from '../utils/welcomeManager.js'
-
-// Props
-const props = defineProps({
-  pokemon: {
-    type: Object,
-    required: true
-  },
-  isShiny: {
-    type: Boolean,
-    default: false
-  }
-})
-
-// Emits
-const emit = defineEmits(['analyze', 'image-selected', 'close', 'update-shiny'])
+import { PALETTE_CONFIG } from '../config/constants.js'
 
 // Reactive data
 const showWelcome = ref(shouldShowWelcome())
@@ -211,12 +203,7 @@ const selectedPokemon = ref(null)
 const palette = ref([])
 const isShiny = ref(false)
 const contrastAnalysis = ref([])
-const originalThemeColors = ref([])
-const isContrastApplied = ref(false)
 const currentStep = ref(1) // 1, 2, 3
-const selectedImage = ref(null)
-const openCategories = ref([])
-const activeSection = ref('physical') // Sección por defecto
 const currentTheme = ref(getCurrentTheme())
 const isContrastImproved = ref(false)
 const originalTheme = ref(null) // Guardar el tema original cuando se aplica la paleta
@@ -410,8 +397,8 @@ const extractColorsFromImageData = (imageData) => {
   
   console.log('🔍 Iniciando extracción de colores...')
   
-  // Sample pixels (every 10th pixel for better performance)
-  for (let i = 0; i < data.length; i += 40) {
+  // Sample pixels (every N pixels for better performance)
+  for (let i = 0; i < data.length; i += PALETTE_CONFIG.SAMPLE_RATE) {
     const r = data[i]
     const g = data[i + 1]
     const b = data[i + 2]
@@ -422,10 +409,10 @@ const extractColorsFromImageData = (imageData) => {
     
     totalSampledPixels++
     
-    // Quantize colors more aggressively to reduce noise
-    const quantizedR = Math.round(r / 25) * 25
-    const quantizedG = Math.round(g / 25) * 25
-    const quantizedB = Math.round(b / 25) * 25
+    // Quantize colors to reduce noise
+    const quantizedR = Math.round(r / PALETTE_CONFIG.QUANTIZATION_FACTOR) * PALETTE_CONFIG.QUANTIZATION_FACTOR
+    const quantizedG = Math.round(g / PALETTE_CONFIG.QUANTIZATION_FACTOR) * PALETTE_CONFIG.QUANTIZATION_FACTOR
+    const quantizedB = Math.round(b / PALETTE_CONFIG.QUANTIZATION_FACTOR) * PALETTE_CONFIG.QUANTIZATION_FACTOR
     
     const colorKey = `${quantizedR},${quantizedG},${quantizedB}`
     colorMap.set(colorKey, (colorMap.get(colorKey) || 0) + 1)
@@ -437,7 +424,7 @@ const extractColorsFromImageData = (imageData) => {
   const allColors = Array.from(colorMap.entries())
     .map(([colorKey, count]) => {
       const [r, g, b] = colorKey.split(',').map(Number)
-      const hex = rgbToHexValues(r, g, b)
+      const hex = rgbToHexFromUtils(r, g, b)
       const percentage = (count / totalSampledPixels) * 100
       
       // Calculate HSL values for better color analysis
@@ -452,118 +439,20 @@ const extractColorsFromImageData = (imageData) => {
         lightness: hsl.l
       }
     })
-    .filter(color => color.percentage > 1.0) // Filtrar colores con porcentaje muy bajo
+    .filter(color => color.percentage > PALETTE_CONFIG.MIN_PERCENTAGE) // Filtrar colores con porcentaje muy bajo
     .sort((a, b) => b.percentage - a.percentage)
   
   console.log(`🎨 Colores encontrados: ${allColors.length}`)
   
   // Improved color selection algorithm - seleccionar colores más diversos
-  const selectedColors = selectDiverseColors(allColors, 8)
+  const selectedColors = selectDiverseColors(allColors, PALETTE_CONFIG.MAX_COLORS)
   
   console.log('✅ Paleta final:', selectedColors.map(c => `${c.hex} (${c.percentage.toFixed(1)}%)`))
   
   return selectedColors
 }
 
-// Improved color selection algorithm
-const selectDiverseColors = (allColors, maxColors) => {
-  // Si hay menos colores que el máximo, devolver todos los disponibles
-  if (allColors.length <= maxColors) {
-    return allColors
-  }
-  
-  const selected = []
-  const used = new Set()
-  
-  // First, add the most frequent color
-  selected.push(allColors[0])
-  used.add(allColors[0].hex)
-  
-  console.log(`🎯 Color principal: ${allColors[0].hex} (${allColors[0].percentage.toFixed(1)}%)`)
-  
-  // Then add colors that are most different from already selected ones
-  for (let i = 1; i < maxColors && i < allColors.length; i++) {
-    let bestColor = null
-    let maxScore = -1
-    
-    for (const color of allColors) {
-      if (used.has(color.hex)) continue
-      
-      // Calculate minimum difference from all selected colors
-      let minDifference = Infinity
-      for (const selectedColor of selected) {
-        const difference = calculateColorDifference(color, selectedColor)
-        minDifference = Math.min(minDifference, difference)
-      }
-      
-      // Score based on difference, saturation, and frequency
-      // Prefer colors that are different, saturated, and frequent
-      const differenceScore = minDifference / 255 // Normalize to 0-1
-      const saturationScore = color.saturation / 100 // Normalize to 0-1
-      const frequencyScore = color.percentage / 100 // Normalize to 0-1
-      
-      // Weighted combination: difference is most important, then saturation, then frequency
-      const score = differenceScore * 0.6 + saturationScore * 0.3 + frequencyScore * 0.1
-      
-      if (score > maxScore) {
-        maxScore = score
-        bestColor = color
-      }
-    }
-    
-    if (bestColor) {
-      selected.push(bestColor)
-      used.add(bestColor.hex)
-      console.log(`🎨 Color ${i + 1}: ${bestColor.hex} (${bestColor.percentage.toFixed(1)}%) - Score: ${maxScore.toFixed(3)}`)
-    } else {
-      // Si no encontramos un color diferente, parar aquí
-      console.log(`⚠️ No se encontraron más colores diferentes después de ${i} selecciones`)
-      break
-    }
-  }
-  
-  // Si no tenemos suficientes colores, agregar algunos más frecuentes
-  while (selected.length < maxColors && allColors.length > selected.length) {
-    for (const color of allColors) {
-      if (!used.has(color.hex)) {
-        selected.push(color)
-        used.add(color.hex)
-        console.log(`➕ Color adicional: ${color.hex} (${color.percentage.toFixed(1)}%)`)
-        break
-      }
-    }
-  }
-  
-  return selected.sort((a, b) => b.percentage - a.percentage)
-}
 
-// Calculate color difference using multiple metrics
-const calculateColorDifference = (color1, color2) => {
-  const [r1, g1, b1] = color1.rgb
-  const [r2, g2, b2] = color2.rgb
-  
-  // Euclidean distance in RGB space
-  const rgbDiff = Math.sqrt(
-    Math.pow(r1 - r2, 2) + 
-    Math.pow(g1 - g2, 2) + 
-    Math.pow(b1 - b2, 2)
-  )
-  
-  // HSL difference with better weighting
-  const hDiff = Math.abs(color1.hsl.h - color2.hsl.h)
-  const sDiff = Math.abs(color1.hsl.s - color2.hsl.s)
-  const lDiff = Math.abs(color1.hsl.l - color2.hsl.l)
-  
-  // Weighted combination: RGB difference is most important
-  return rgbDiff * 0.7 + hDiff * 0.2 + sDiff * 0.05 + lDiff * 0.05
-}
-
-const rgbToHexValues = (r, g, b) => {
-  return '#' + [r, g, b].map(x => {
-    const hex = x.toString(16)
-    return hex.length === 1 ? '0' + hex : hex
-  }).join('')
-}
 
 // Convert RGB to HSL for better color analysis
 const rgbToHsl = (r, g, b) => {

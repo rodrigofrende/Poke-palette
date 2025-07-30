@@ -1,3 +1,5 @@
+import { CONTRAST_CONFIG } from '../config/constants.js'
+
 /**
  * Utilidades para el manejo de contraste de colores
  * Basado en las guías WCAG 2.1 para accesibilidad
@@ -189,9 +191,9 @@ export function checkWCAGCompliance(textColor, backgroundColor, level = 'AA', si
   
   let requiredRatio;
   if (level === 'AA') {
-    requiredRatio = size === 'large' ? 3.0 : 4.5;
+    requiredRatio = size === 'large' ? CONTRAST_CONFIG.AA_LARGE : CONTRAST_CONFIG.AA_NORMAL;
   } else if (level === 'AAA') {
-    requiredRatio = size === 'large' ? 4.5 : 7.0;
+    requiredRatio = size === 'large' ? CONTRAST_CONFIG.AAA_LARGE : CONTRAST_CONFIG.AAA_NORMAL;
   }
   
   const passes = ratio >= requiredRatio;
@@ -202,7 +204,7 @@ export function checkWCAGCompliance(textColor, backgroundColor, level = 'AA', si
     passes,
     level,
     size,
-    grade: ratio >= 7.0 ? 'AAA' : ratio >= 4.5 ? 'AA' : 'Fail'
+    grade: ratio >= CONTRAST_CONFIG.AAA_NORMAL ? 'AAA' : ratio >= CONTRAST_CONFIG.AA_NORMAL ? 'AA' : 'Fail'
   };
 }
 
@@ -254,30 +256,4 @@ export function applyContrastToEntireApp() {
   console.log('Contraste aplicado a toda la aplicación');
 }
 
-/**
- * Convierte un color RGB a hexadecimal
- * @param {number} r - Componente rojo (0-255)
- * @param {number} g - Componente verde (0-255)
- * @param {number} b - Componente azul (0-255)
- * @returns {string} Color en formato hexadecimal
- */
-export function rgbToHexFromValues(r, g, b) {
-  return '#' + [r, g, b].map(x => {
-    const hex = x.toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  }).join('');
-}
-
-/**
- * Convierte un color hexadecimal a RGB
- * @param {string} hex - Color en formato hexadecimal
- * @returns {object} Objeto con componentes RGB
- */
-export function hexToRgb(hex) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : null;
-} 
+ 
