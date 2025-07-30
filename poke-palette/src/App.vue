@@ -1,5 +1,10 @@
 <script setup>
-import PokemonPaletteAnalyzer from './components/PokemonPaletteAnalyzer.vue'
+import { defineAsyncComponent } from 'vue'
+
+// Lazy loading para el componente principal
+const PokemonPaletteAnalyzer = defineAsyncComponent(() => 
+  import('./components/PokemonPaletteAnalyzer.vue')
+)
 </script>
 
 <template>
