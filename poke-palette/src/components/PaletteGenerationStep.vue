@@ -1,22 +1,18 @@
 <template>
-  <div class="step-container">
-    <div class="step-content">
-      <div v-if="palette.length > 0">
-        <ColorPalette 
-          :palette="palette"
-          :pokemon-name="pokemonName"
-          @apply-theme="handleApplyTheme"
-          @restore-theme="handleRestoreTheme"
-          @update-palette="handleUpdatePalette"
-        />
-      </div>
-      
-      <div v-else class="empty-state">
-        <div class="empty-icon">🎨</div>
-        <h3>No hay paleta disponible</h3>
-        <p>Primero debes generar una paleta en el paso anterior</p>
-      </div>
-    </div>
+  <div v-if="palette.length > 0">
+    <ColorPalette 
+      :palette="palette"
+      :pokemon-name="pokemonName"
+      @apply-theme="handleApplyTheme"
+      @restore-theme="handleRestoreTheme"
+      @update-palette="handleUpdatePalette"
+    />
+  </div>
+  
+  <div v-else class="empty-state">
+    <div class="empty-icon">🎨</div>
+    <h3>No hay paleta disponible</h3>
+    <p>Primero debes generar una paleta en el paso anterior</p>
   </div>
 </template>
 

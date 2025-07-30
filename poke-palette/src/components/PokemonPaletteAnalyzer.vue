@@ -166,12 +166,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
-import PokemonSearchStep from './PokemonSearchStep.vue'
-import PaletteGenerationStep from './PaletteGenerationStep.vue'
-import ContrastAnalysisStep from './ContrastAnalysisStep.vue'
-import WelcomeScreen from './WelcomeScreen.vue'
-import ErrorNotification from './ErrorNotification.vue'
+import { ref, onMounted, watch, computed, defineAsyncComponent } from 'vue'
+
+// Lazy loading para componentes grandes
+const PokemonSearchStep = defineAsyncComponent(() => 
+  import('./PokemonSearchStep.vue')
+)
+const PaletteGenerationStep = defineAsyncComponent(() => 
+  import('./PaletteGenerationStep.vue')
+)
+const ContrastAnalysisStep = defineAsyncComponent(() => 
+  import('./ContrastAnalysisStep.vue')
+)
+const WelcomeScreen = defineAsyncComponent(() => 
+  import('./WelcomeScreen.vue')
+)
+const ErrorNotification = defineAsyncComponent(() => 
+  import('./ErrorNotification.vue')
+)
 import { formatPokemonName } from '../utils/formatters.js'
 import { 
   getOptimalTextColor, 
@@ -196,6 +208,7 @@ import {
 } from '../utils/themeManager.js'
 import { shouldShowWelcome, markWelcomeAsSeen } from '../utils/welcomeManager.js'
 import { PALETTE_CONFIG } from '../config/constants.js'
+import { preloadComponent } from '../utils/lazyLoader.js'
 
 // Reactive data
 const showWelcome = ref(shouldShowWelcome())
@@ -264,11 +277,18 @@ const handlePokemonSelected = (pokemon) => {
     return
   }
   
-  selectedPokemon.value = pokemon
-  // Resetear estados de contraste al seleccionar nuevo Pokémon
-  isContrastImproved.value = false
-  originalTheme.value = null
-  contrastAnalysis.value = []
+  // Si es el mismo Pokémon pero con imagen diferente, actualizar solo la imagen
+  if (selectedPokemon.value && selectedPokemon.value.id === pokemon.id) {
+    selectedPokemon.value.imageUrl = pokemon.imageUrl
+    console.log('🖼️ Imagen actualizada para el mismo Pokémon:', pokemon.imageUrl)
+  } else {
+    // Es un Pokémon diferente, reemplazar completamente
+    selectedPokemon.value = pokemon
+    // Resetear estados de contraste al seleccionar nuevo Pokémon
+    isContrastImproved.value = false
+    originalTheme.value = null
+    contrastAnalysis.value = []
+  }
 }
 
 const updateShiny = (value) => {
@@ -454,37 +474,6 @@ const extractColorsFromImageData = (imageData) => {
 
 
 
-// Convert RGB to HSL for better color analysis
-const rgbToHsl = (r, g, b) => {
-  r /= 255
-  g /= 255
-  b /= 255
-  
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  let h, s, l = (max + min) / 2
-  
-  if (max === min) {
-    h = s = 0 // achromatic
-  } else {
-    const d = max - min
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-    
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break
-      case g: h = (b - r) / d + 2; break
-      case b: h = (r - g) / d + 4; break
-    }
-    h /= 6
-  }
-  
-  return {
-    h: Math.round(h * 360),
-    s: Math.round(s * 100),
-    l: Math.round(l * 100)
-  }
-}
-
 // Funciones de gestión de temas
 function handleApplyTheme(colorHexes) {
   // Guardar el tema actual como original antes de aplicar el nuevo
@@ -652,6 +641,10 @@ onMounted(() => {
   restoreDefaultTheme()
   currentTheme.value = getCurrentTheme()
   isContrastImproved.value = false
+  
+  // Preload componentes que probablemente se usarán
+  preloadComponent(() => import('./ContrastAnalysisStep.vue'), 'ContrastAnalysisStep')
+  preloadComponent(() => import('./PaletteGenerationStep.vue'), 'PaletteGenerationStep')
 })
 </script>
 

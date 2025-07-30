@@ -15,6 +15,7 @@
             loading="lazy"
             @error="handleImageError"
             @click="openImageModal(pokemonImageUrl, formatPokemonName(pokemon.name))"
+            :title="`Click para ver imagen en grande`"
           />
         </div>
         
@@ -127,19 +128,27 @@
                     v-for="(image, index) in images" 
                     :key="`${category}-${index}`"
                     class="gallery-item"
-                    @click="selectImage(image)"
                   >
                     <div class="gallery-image-container">
                       <img 
                         :src="image.url" 
                         :alt="`${formatPokemonName(pokemon.name)} - ${image.name}`"
                         class="gallery-image"
+                        :class="{ 'selected': selectedImage && selectedImage.url === image.url }"
                         loading="lazy"
                         @error="handleImageError"
-                        @click.stop="openImageModal(image.url, `${formatPokemonName(pokemon.name)} - ${image.name}`)"
+                        @click="selectImage(image)"
+                        :title="`Click para seleccionar: ${image.name}`"
                       />
                       <div class="gallery-overlay">
                         <span class="gallery-label">{{ image.name }}</span>
+                        <button 
+                          @click.stop="openImageModal(image.url, `${formatPokemonName(pokemon.name)} - ${image.name}`)"
+                          class="gallery-modal-btn"
+                          :title="`Ver ${image.name} en grande`"
+                        >
+                          🔍
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -214,6 +223,12 @@ watch(() => props.isShiny, (newValue) => {
 const pokemonImageUrl = computed(() => {
   if (!props.pokemon) return ''
   
+  // Si el Pokémon tiene una imageUrl específica (seleccionada de la galería), usarla
+  if (props.pokemon.imageUrl) {
+    return props.pokemon.imageUrl
+  }
+  
+  // Si no, generar la URL basándose en el estado shiny
   const baseUrl = localIsShiny.value 
     ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${props.pokemon.id}.png`
     : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${props.pokemon.id}.png`
@@ -226,6 +241,17 @@ const handleShinyToggle = (checked) => {
   console.log('🔄 Toggle shiny cambiado:', checked)
   localIsShiny.value = checked
   emit('update-shiny', checked)
+  
+  // Si hay una imagen específica seleccionada, limpiarla para usar la URL generada automáticamente
+  if (props.pokemon.imageUrl) {
+    emit('image-selected', {
+      name: checked ? 'Shiny Oficial' : 'Oficial',
+      url: checked 
+        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${props.pokemon.id}.png`
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${props.pokemon.id}.png`,
+      category: 'Oficial'
+    })
+  }
 }
 
 // Definición de secciones
@@ -405,8 +431,12 @@ const setActiveSection = (sectionId) => {
 }
 
 const selectImage = (image) => {
+  // Reemplazar la imagen seleccionada con la de la galería
   selectedImage.value = image
   emit('image-selected', image)
+  
+  // Mostrar notificación de cambio
+  console.log(`🖼️ Imagen cambiada a: ${image.name}`)
 }
 
 const openImageModal = (imageUrl, imageName) => {
@@ -1031,6 +1061,13 @@ const toggleCategory = (category) => {
   cursor: pointer;
 }
 
+.gallery-image.selected {
+  border: 3px solid var(--theme-primary);
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+  transform: scale(1.05);
+}
+
 .gallery-overlay {
   position: absolute;
   bottom: 0;
@@ -1039,8 +1076,14 @@ const toggleCategory = (category) => {
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
   padding: 20px 10px 10px;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gallery-image-container:hover .gallery-overlay {
+  opacity: 1;
 }
 
 .gallery-label {
@@ -1049,6 +1092,25 @@ const toggleCategory = (category) => {
   font-weight: 600;
   text-align: center;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  flex: 1;
+}
+
+.gallery-modal-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  padding: 4px 6px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  margin-left: 8px;
+}
+
+.gallery-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
 }
 
 .empty-category-message {

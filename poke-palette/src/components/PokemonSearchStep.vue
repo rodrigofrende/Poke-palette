@@ -39,10 +39,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import PokemonSearch from './PokemonSearch.vue'
-import PokemonCard from './PokemonCard.vue'
-import PokeballLoader from './PokeballLoader.vue'
+import { ref, computed, watch, defineAsyncComponent } from 'vue'
+
+// Lazy loading para componentes grandes
+const PokemonSearch = defineAsyncComponent(() => 
+  import('./PokemonSearch.vue')
+)
+const PokemonCard = defineAsyncComponent(() => 
+  import('./PokemonCard.vue')
+)
+const PokeballLoader = defineAsyncComponent(() => 
+  import('./PokeballLoader.vue')
+)
 import { getPokemonDetails, getPokemonSpecies } from '../services/pokeApi.js'
 import { formatPokemonName } from '../utils/formatters.js'
 
