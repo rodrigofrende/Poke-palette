@@ -1,3 +1,5 @@
+[![Netlify Status](https://img.shields.io/badge/🟢%20Ver%20Demo%20Online-pokepalette.netlify.app-blue?style=for-the-badge)](https://pokepalette.netlify.app/)
+
 # 🎨 Poké Palette
 
 Una herramienta web para extraer paletas de colores de Pokémon y exportarlas a diferentes formatos para diseño UI/UX.
