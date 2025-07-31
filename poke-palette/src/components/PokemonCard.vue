@@ -57,17 +57,11 @@
       </div>
       
       <!-- Navegación de secciones -->
-      <div class="section-navigation">
-        <button 
-          v-for="section in sections" 
-          :key="section.id"
-          @click="setActiveSection(section.id)"
-          :class="['nav-btn', { active: activeSection === section.id }]"
-        >
-          <span class="nav-icon">{{ section.icon }}</span>
-          <span class="nav-text">{{ section.title }}</span>
-        </button>
-      </div>
+      <TabNavigation 
+        :tabs="sections"
+        :active-tab="activeSection"
+        @tab-change="setActiveSection"
+      />
       
       <!-- Contenido dinámico basado en sección activa -->
       <div class="section-content">
@@ -177,6 +171,7 @@
 <script setup>
 import TypeBadge from './TypeBadge.vue'
 import ImageModal from './ImageModal.vue'
+import TabNavigation from './TabNavigation.vue'
 import { 
   formatPokemonName, 
   formatColorName, 
@@ -752,53 +747,7 @@ const toggleCategory = (category) => {
   margin-top: 8px;
 }
 
-/* Navegación de secciones */
-.section-navigation {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
-  padding: 0;
-  flex-shrink: 0;
-}
 
-.nav-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  background: var(--theme-quinary);
-  border: 2px solid var(--theme-border);
-  border-radius: 10px;
-  color: var(--theme-quaternary);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 13px;
-  min-width: 100px;
-  justify-content: center;
-}
-
-.nav-btn:hover {
-  background: var(--theme-primary);
-  color: var(--theme-tertiary);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-.nav-btn.active {
-  background: var(--theme-primary);
-  color: var(--theme-tertiary);
-  border-color: var(--theme-primary);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.nav-icon {
-  font-size: 16px;
-}
-
-.nav-text {
-  font-size: 13px;
-}
 
 /* Contenido de secciones */
 .section-content {
@@ -1170,15 +1119,7 @@ const toggleCategory = (category) => {
     min-width: 160px;
   }
   
-  .section-navigation {
-    gap: 6px;
-  }
-  
-  .nav-btn {
-    padding: 8px 14px;
-    min-width: 90px;
-    font-size: 12px;
-  }
+
   
   .gallery-grid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -1216,15 +1157,7 @@ const toggleCategory = (category) => {
     min-width: 140px;
   }
   
-  .section-navigation {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .nav-btn {
-    width: 100%;
-    min-width: auto;
-  }
+
   
   .gallery-grid {
     grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
