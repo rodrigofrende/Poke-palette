@@ -44,7 +44,7 @@ const emit = defineEmits(['tab-change'])
   align-items: center;
   gap: 6px;
   padding: 10px 16px;
-  background: var(--theme-quinary);
+  background: linear-gradient(135deg, #f7fafc, #ffffff);
   border: 2px solid var(--theme-border);
   border-radius: 10px;
   color: var(--theme-quaternary);
@@ -54,20 +54,22 @@ const emit = defineEmits(['tab-change'])
   font-size: 13px;
   min-width: 100px;
   justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .nav-btn:hover {
-  background: var(--theme-primary);
-  color: var(--theme-tertiary);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  color: white;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+  border-color: var(--theme-primary);
 }
 
 .nav-btn.active {
-  background: var(--theme-primary);
-  color: var(--theme-tertiary);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  color: white;
   border-color: var(--theme-primary);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .nav-icon {

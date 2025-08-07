@@ -19,16 +19,19 @@
         <div class="contrast-tabs-content">
           <!-- Tab: Resumen -->
           <div v-if="contrastActiveTab === 'overview'" class="contrast-tab-panel">
-            <h3>
-              📊 Análisis de Contraste
-              <InfoTooltip text="Evalúa la legibilidad del texto sobre cada color de la paleta. Los resultados indican si el contraste cumple con los estándares de accesibilidad web. Los colores que aprueban son adecuados para uso en interfaces, mientras que los que fallan requieren ajustes para garantizar la legibilidad." size="medium" />
-            </h3>
+            <div class="contrast-header">
+              <div class="contrast-title">
+                <span class="contrast-icon">📊</span>
+                <h3>Análisis de Contraste</h3>
+                <InfoTooltip text="Evalúa la legibilidad del texto sobre cada color de la paleta. Los resultados indican si el contraste cumple con los estándares de accesibilidad web. Los colores que aprueban son adecuados para uso en interfaces, mientras que los que fallan requieren ajustes para garantizar la legibilidad." size="medium" />
+              </div>
+            </div>
             
             <!-- Hint intuitivo para el usuario -->
             <div class="contrast-hint-inline">
               <div class="hint-inline-content">
                 <span class="hint-inline-icon">💡</span>
-                <span class="hint-inline-text">¿Algunos textos se ven difíciles de leer? Usa el botón "Mejorar Contraste Global" para optimizar automáticamente la legibilidad</span>
+                <span class="hint-inline-text">Los colores se aplican automáticamente con el mejor contraste posible para garantizar la legibilidad del texto</span>
               </div>
             </div>
             
@@ -37,7 +40,7 @@
               <div class="analysis-header">
                 <div class="analysis-title">
                   <span class="analysis-icon">⚙️</span>
-                  <span class="analysis-text">Análisis General de la Aplicación</span>
+                  <span class="analysis-text">ANÁLISIS GENERAL DE LA APLICACIÓN</span>
                 </div>
               </div>
               <div class="contrast-metrics">
@@ -119,10 +122,13 @@
           
           <!-- Tab: Detalles -->
           <div v-if="contrastActiveTab === 'details'" class="contrast-tab-panel">
-            <h3>
-              🔍 Análisis Detallado de Contraste
-              <InfoTooltip text="Análisis individual de cada color de la paleta con texto blanco y negro. Los resultados muestran el ratio de contraste y si cumple con los estándares WCAG AA." size="medium" />
-            </h3>
+            <div class="contrast-header">
+              <div class="contrast-title">
+                <span class="contrast-icon">🔍</span>
+                <h3>Análisis Detallado de Contraste</h3>
+                <InfoTooltip text="Análisis individual de cada color de la paleta con texto blanco y negro. Los resultados muestran el ratio de contraste y si cumple con los estándares WCAG AA." size="medium" />
+              </div>
+            </div>
             
             <div class="contrast-grid">
               <div 
@@ -199,15 +205,8 @@ const props = defineProps({
   currentTheme: {
     type: Object,
     default: () => ({})
-  },
-  isContrastImproved: {
-    type: Boolean,
-    default: false
   }
 })
-
-// Emits
-const emit = defineEmits(['improve-contrast', 'restore-contrast'])
 
 // Reactive data
 const contrastActiveTab = ref('overview')
@@ -275,7 +274,7 @@ const totalElements = computed(() => {
 })
 
 const currentThemeName = computed(() => {
-  return props.isContrastImproved ? 'Tema Mejorado' : 'Tema Original'
+  return 'Tema Optimizado'
 })
 
 const currentThemeColors = computed(() => {
@@ -307,17 +306,19 @@ const getContrastLabel = (score) => {
 
 .contrast-tabs-navigation {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  border-bottom: 2px solid var(--theme-border);
-  padding-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 24px;
+  background: var(--theme-quinary);
+  border-radius: 12px;
+  padding: 6px;
+  border: 1px solid var(--theme-border);
 }
 
 .contrast-tab-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border: none;
   background: transparent;
   color: var(--theme-senary);
@@ -328,25 +329,53 @@ const getContrastLabel = (score) => {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-size: 0.85rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.contrast-tab-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.contrast-tab-btn:hover::before {
+  opacity: 0.1;
 }
 
 .contrast-tab-btn:hover {
-  background: var(--theme-quinary);
   color: var(--theme-quaternary);
+  transform: translateY(-1px);
 }
 
 .contrast-tab-btn.active {
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
-  color: var(--theme-tertiary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.contrast-tab-btn.active::before {
+  opacity: 0;
 }
 
 .tab-icon {
   font-size: 1.1em;
+  position: relative;
+  z-index: 1;
 }
 
 .tab-text {
   font-size: 0.8rem;
+  position: relative;
+  z-index: 1;
 }
 
 .contrast-tabs-content {
@@ -358,69 +387,86 @@ const getContrastLabel = (score) => {
   animation: fadeIn 0.3s ease-in-out;
 }
 
-.contrast-tab-panel h3 {
-  color: var(--theme-quaternary);
-  margin-bottom: 20px;
-  font-size: 1.3rem;
-  font-weight: bold;
+.contrast-header {
+  margin-bottom: 24px;
+}
+
+.contrast-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  color: var(--theme-quaternary);
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.contrast-title h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--theme-quaternary);
+}
+
+.contrast-icon {
+  font-size: 1.5em;
+  opacity: 0.8;
 }
 
 .contrast-hint-inline {
   background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 100%);
   border: 1px solid #b3d9ff;
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
   animation: fadeIn 0.3s ease-in-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .hint-inline-content {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .hint-inline-icon {
-  font-size: 1.2em;
+  font-size: 1.3em;
   color: #0066cc;
 }
 
 .hint-inline-text {
   color: #0066cc;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .global-contrast-analysis {
   background: var(--theme-quinary);
-  border-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--theme-border);
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .analysis-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .analysis-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: var(--theme-quaternary);
   font-weight: 600;
   font-size: 1.1rem;
 }
 
 .analysis-icon {
-  font-size: 1.3em;
+  font-size: 1.4em;
 }
 
 .analysis-text {
@@ -431,72 +477,74 @@ const getContrastLabel = (score) => {
 
 .contrast-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
 }
 
 .metric-card {
-  background: var(--theme-quinary);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background: var(--theme-tertiary);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--theme-border);
   text-align: center;
   transition: all 0.3s ease;
 }
 
 .metric-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border-color: var(--theme-primary);
 }
 
 .metric-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 15px;
+  gap: 10px;
+  margin-bottom: 20px;
   color: var(--theme-primary);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
 .metric-icon {
-  font-size: 1.2em;
+  font-size: 1.3em;
 }
 
 .metric-title {
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 }
 
 .metric-value {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: bold;
   color: var(--theme-quaternary);
-  margin-bottom: 10px;
+  margin-bottom: 16px;
+  line-height: 1;
 }
 
 .metric-subtitle {
   color: var(--theme-primary);
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .metric-bar {
   width: 100%;
-  height: 6px;
+  height: 8px;
   background: var(--theme-border);
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .metric-fill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 4px;
   transition: all 0.3s ease;
 }
 
@@ -513,7 +561,7 @@ const getContrastLabel = (score) => {
 }
 
 .metric-label {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--theme-septenary);
   font-weight: 500;
 }
@@ -521,29 +569,29 @@ const getContrastLabel = (score) => {
 .palette-preview {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .theme-color-swatch {
-  width: 30px;
-  height: 30px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   border: 2px solid var(--theme-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
 .theme-color-swatch:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: scale(1.15);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .contrast-analysis-compact {
   background: var(--theme-quinary);
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--theme-border);
 }
 
@@ -554,7 +602,7 @@ const getContrastLabel = (score) => {
 
 .summary-stats {
   display: flex;
-  gap: 30px;
+  gap: 40px;
   align-items: center;
 }
 
@@ -562,16 +610,16 @@ const getContrastLabel = (score) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
 }
 
 .stat-icon {
-  font-size: 1.5em;
+  font-size: 1.8em;
   color: var(--theme-primary);
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--theme-senary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -579,103 +627,118 @@ const getContrastLabel = (score) => {
 }
 
 .stat-value {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: bold;
   color: var(--theme-quaternary);
 }
 
 .contrast-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
 }
 
 .contrast-card {
-  background: var(--theme-quinary);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background: var(--theme-tertiary);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--theme-border);
   transition: all 0.3s ease;
 }
 
 .contrast-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border-color: var(--theme-primary);
 }
 
 .card-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .color-preview {
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
+  width: 55px;
+  height: 55px;
+  border-radius: 12px;
   border: 2px solid var(--theme-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.color-preview:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
 }
 
 .color-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .color-hex {
-  font-family: 'Courier New', monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-weight: bold;
   color: var(--theme-quaternary);
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .color-name {
   color: var(--theme-senary);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
 .text-comparison {
   display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .preview-btn {
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid var(--theme-border);
-  border-radius: 6px;
-  font-size: 0.8rem;
+  padding: 12px 16px;
+  border: 2px solid var(--theme-border);
+  border-radius: 8px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  background: var(--theme-quinary);
 }
 
 .preview-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .card-status {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px;
-  border-radius: 6px;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
   background: var(--theme-quinary);
   border: 1px solid var(--theme-border);
+  transition: all 0.3s ease;
+}
+
+.card-status:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .status-icon {
-  font-size: 1.1em;
+  font-size: 1.2em;
 }
 
 .status-icon.pass {
@@ -687,7 +750,7 @@ const getContrastLabel = (score) => {
 }
 
 .status-text {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -701,14 +764,50 @@ const getContrastLabel = (score) => {
   color: #F44336;
 }
 
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--theme-senary);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  margin: 0 0 12px 0;
+  color: var(--theme-quaternary);
+  font-size: 1.5rem;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 768px) {
   .contrast-tabs-navigation {
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
+    padding: 4px;
   }
   
   .contrast-tab-btn {
-    padding: 8px 12px;
+    padding: 10px 16px;
     font-size: 0.8rem;
   }
   
@@ -718,7 +817,7 @@ const getContrastLabel = (score) => {
   
   .summary-stats {
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
   }
   
   .contrast-grid {
@@ -726,17 +825,25 @@ const getContrastLabel = (score) => {
   }
   
   .metric-value {
-    font-size: 2rem;
+    font-size: 2.2rem;
   }
   
   .metric-card {
-    padding: 15px;
+    padding: 20px;
+  }
+  
+  .contrast-title {
+    font-size: 1.2rem;
+  }
+  
+  .contrast-title h3 {
+    font-size: 1.2rem;
   }
 }
 
 @media (max-width: 480px) {
   .contrast-tab-btn {
-    padding: 6px 10px;
+    padding: 8px 12px;
     font-size: 0.75rem;
   }
   
@@ -749,24 +856,28 @@ const getContrastLabel = (score) => {
   }
   
   .metric-value {
-    font-size: 1.8rem;
+    font-size: 2rem;
   }
   
   .metric-card {
-    padding: 12px;
+    padding: 16px;
   }
   
   .contrast-card {
-    padding: 15px;
+    padding: 20px;
   }
   
   .color-preview {
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
   }
   
   .text-comparison {
     flex-direction: column;
+  }
+  
+  .preview-btn {
+    padding: 10px 12px;
   }
 }
 </style> 

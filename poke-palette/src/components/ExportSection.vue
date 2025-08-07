@@ -1,7 +1,8 @@
 <template>
   <div class="export-section">
     <div class="export-header">
-      <h3>📤 Exportar Paleta</h3>
+      <div class="export-header-icon">📤</div>
+      <h3>Exportar Paleta</h3>
       <p class="export-description">
         Exporta la paleta de colores de {{ pokemonName }} en diferentes formatos para usar en tus proyectos
       </p>
@@ -9,54 +10,14 @@
 
     <!-- Opciones de exportación -->
     <div class="export-options">
-      <!-- Figma -->
-      <div class="export-option">
-        <div class="export-option-header">
-          <div class="export-icon">🎨</div>
-          <div class="export-info">
-            <h4>Figma</h4>
-            <p>Variables de color para Figma con nombres descriptivos</p>
-          </div>
-        </div>
-        <div class="export-content">
-          <div class="code-block">
-            <div class="code-header">
-              <span>Variables de Figma</span>
-              <button @click="copyToClipboard(figmaCode)" class="copy-btn" title="Copiar código">
-                📋
-              </button>
-            </div>
-            <pre class="code-content">{{ figmaCode }}</pre>
-          </div>
-        </div>
-      </div>
-
-      <!-- JSON -->
-      <div class="export-option">
-        <div class="export-option-header">
-          <div class="export-icon">📄</div>
-          <div class="export-info">
-            <h4>JSON</h4>
-            <p>Datos estructurados con información completa de cada color</p>
-          </div>
-        </div>
-        <div class="export-content">
-          <div class="code-block">
-            <div class="code-header">
-              <span>Datos JSON</span>
-              <button @click="copyToClipboard(jsonCode)" class="copy-btn" title="Copiar código">
-                📋
-              </button>
-            </div>
-            <pre class="code-content">{{ jsonCode }}</pre>
-          </div>
-        </div>
-      </div>
-
       <!-- Tailwind CSS -->
       <div class="export-option">
         <div class="export-option-header">
-          <div class="export-icon">⚡</div>
+          <div class="export-icon tailwind-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
           <div class="export-info">
             <h4>Tailwind CSS</h4>
             <p>Configuración de colores personalizados para Tailwind CSS</p>
@@ -65,9 +26,16 @@
         <div class="export-content">
           <div class="code-block">
             <div class="code-header">
-              <span>Configuración de Tailwind</span>
+              <div class="code-header-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <span class="code-header-title">tailwind.config.js</span>
               <button @click="copyToClipboard(tailwindCode)" class="copy-btn" title="Copiar código">
-                📋
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
               </button>
             </div>
             <pre class="code-content">{{ tailwindCode }}</pre>
@@ -78,7 +46,11 @@
       <!-- CSS Variables -->
       <div class="export-option">
         <div class="export-option-header">
-          <div class="export-icon">🎯</div>
+          <div class="export-icon css-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
+            </svg>
+          </div>
           <div class="export-info">
             <h4>CSS Variables</h4>
             <p>Variables CSS personalizadas para usar en cualquier proyecto</p>
@@ -87,12 +59,85 @@
         <div class="export-content">
           <div class="code-block">
             <div class="code-header">
-              <span>Variables CSS</span>
+              <div class="code-header-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <span class="code-header-title">styles.css</span>
               <button @click="copyToClipboard(cssCode)" class="copy-btn" title="Copiar código">
-                📋
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
               </button>
             </div>
             <pre class="code-content">{{ cssCode }}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Figma -->
+      <div class="export-option">
+        <div class="export-option-header">
+          <div class="export-icon figma-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+          </div>
+          <div class="export-info">
+            <h4>Figma</h4>
+            <p>Variables de color para Figma con nombres descriptivos</p>
+          </div>
+        </div>
+        <div class="export-content">
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-header-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <span class="code-header-title">figma-variables.json</span>
+              <button @click="copyToClipboard(figmaCode)" class="copy-btn" title="Copiar código">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+              </button>
+            </div>
+            <pre class="code-content">{{ figmaCode }}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- JSON -->
+      <div class="export-option">
+        <div class="export-option-header">
+          <div class="export-icon json-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+            </svg>
+          </div>
+          <div class="export-info">
+            <h4>JSON</h4>
+            <p>Datos estructurados con información completa de cada color</p>
+          </div>
+        </div>
+        <div class="export-content">
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-header-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <span class="code-header-title">palette-data.json</span>
+              <button @click="copyToClipboard(jsonCode)" class="copy-btn" title="Copiar código">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+              </button>
+            </div>
+            <pre class="code-content">{{ jsonCode }}</pre>
           </div>
         </div>
       </div>
@@ -221,88 +266,124 @@ const copyToClipboard = async (text) => {
   flex-direction: column;
   gap: 24px;
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .export-header {
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
+  padding: 24px;
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  border-radius: 16px;
+  color: white;
+}
+
+.export-header-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
 }
 
 .export-header h3 {
-  margin: 0 0 8px 0;
-  color: var(--theme-primary);
-  font-size: 1.5rem;
+  margin: 0 0 12px 0;
+  font-size: 2rem;
+  font-weight: bold;
 }
 
 .export-description {
   margin: 0;
-  color: var(--theme-quaternary);
-  font-size: 0.95rem;
-  line-height: 1.4;
+  font-size: 1.1rem;
+  opacity: 0.9;
+  line-height: 1.5;
 }
 
 .export-options {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 24px;
 }
 
 .export-option {
   background: var(--theme-tertiary);
-  border: 1px solid var(--theme-border);
-  border-radius: 12px;
+  border: 2px solid var(--theme-border);
+  border-radius: 16px;
   overflow: hidden;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .export-option:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  border-color: var(--theme-primary);
 }
 
 .export-option-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: var(--theme-quinary);
-  border-bottom: 1px solid var(--theme-border);
+  gap: 20px;
+  padding: 24px;
+  background: linear-gradient(135deg, var(--theme-quinary), var(--theme-tertiary));
+  border-bottom: 2px solid var(--theme-border);
 }
 
 .export-icon {
-  font-size: 2rem;
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--theme-primary);
+  border-radius: 12px;
   color: white;
-  border-radius: 8px;
+  font-size: 1.8rem;
+  transition: all 0.3s ease;
+}
+
+.export-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.figma-icon {
+  background: linear-gradient(135deg, #F24E1E, #FF6B35);
+}
+
+.json-icon {
+  background: linear-gradient(135deg, #F7DF1E, #FFD700);
+}
+
+.tailwind-icon {
+  background: linear-gradient(135deg, #06B6D4, #0891B2);
+}
+
+.css-icon {
+  background: linear-gradient(135deg, #1572B6, #33A9DC);
 }
 
 .export-info h4 {
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
   color: var(--theme-primary);
-  font-size: 1.1rem;
+  font-size: 1.3rem;
+  font-weight: bold;
 }
 
 .export-info p {
   margin: 0;
   color: var(--theme-quaternary);
-  font-size: 0.9rem;
-  line-height: 1.4;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .export-content {
-  padding: 20px;
+  padding: 24px;
 }
 
 .code-block {
-  background: var(--theme-quinary);
-  border: 1px solid var(--theme-border);
-  border-radius: 8px;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .code-header {
@@ -310,15 +391,46 @@ const copyToClipboard = async (text) => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: var(--theme-tertiary);
-  border-bottom: 1px solid var(--theme-border);
+  background: #2d2d2d;
+  border-bottom: 1px solid #444;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--theme-primary);
+  color: #e0e0e0;
+}
+
+.code-header-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.dot.red {
+  background: #ff5f56;
+}
+
+.dot.yellow {
+  background: #ffbd2e;
+}
+
+.dot.green {
+  background: #27ca3f;
+}
+
+.code-header-title {
+  flex: 1;
+  text-align: center;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: #b4b4b4;
 }
 
 .copy-btn {
-  background: var(--theme-primary);
+  background: linear-gradient(135deg, #404040, #505050);
   color: white;
   border: none;
   border-radius: 6px;
@@ -326,35 +438,59 @@ const copyToClipboard = async (text) => {
   cursor: pointer;
   font-size: 0.8rem;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .copy-btn:hover {
-  background: var(--theme-secondary);
+  background: linear-gradient(135deg, #505050, #606060);
   transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .code-content {
   margin: 0;
-  padding: 16px;
-  background: var(--theme-quinary);
-  color: var(--theme-primary);
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.85rem;
-  line-height: 1.4;
+  padding: 20px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Fira Code', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Syntax highlighting for different file types */
+.code-content:has(+ .code-header-title:contains('tailwind.config.js')) {
+  color: #06B6D4;
+}
+
+.code-content:has(+ .code-header-title:contains('styles.css')) {
+  color: #1572B6;
+}
+
+.code-content:has(+ .code-header-title:contains('figma-variables.json')) {
+  color: #F24E1E;
+}
+
+.code-content:has(+ .code-header-title:contains('palette-data.json')) {
+  color: #F7DF1E;
 }
 
 .notification {
   position: fixed;
   top: 20px;
   right: 20px;
-  background: var(--theme-primary);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
   color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   animation: slideIn 0.3s ease-out;
 }
@@ -362,15 +498,16 @@ const copyToClipboard = async (text) => {
 .notification-content {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .notification-icon {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
 .notification-text {
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 500;
 }
 
@@ -396,28 +533,69 @@ const copyToClipboard = async (text) => {
   transform: translateX(100%);
 }
 
+@media (max-width: 1200px) {
+  .export-options {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
+  .export-header {
+    padding: 20px;
+  }
+  
+  .export-header-icon {
+    font-size: 2.5rem;
+  }
+  
+  .export-header h3 {
+    font-size: 1.5rem;
+  }
+  
+  .export-description {
+    font-size: 1rem;
+  }
+  
   .export-option-header {
     flex-direction: column;
     text-align: center;
-    gap: 12px;
+    gap: 16px;
+    padding: 20px;
   }
   
   .export-icon {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
     font-size: 1.5rem;
+  }
+  
+  .export-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .export-info h4 {
+    font-size: 1.2rem;
+  }
+  
+  .export-info p {
+    font-size: 0.9rem;
+  }
+  
+  .export-content {
+    padding: 20px;
   }
   
   .code-content {
     font-size: 0.8rem;
-    padding: 12px;
+    padding: 16px;
   }
   
   .notification {
     top: 10px;
     right: 10px;
     left: 10px;
+    padding: 12px 16px;
   }
 }
 </style> 

@@ -75,8 +75,8 @@
       </p>
     </div>
     
-    <!-- Botones de theme -->
-    <div class="theme-buttons">
+    <!-- Botones de theme (ocultos ya que están en la parte superior) -->
+    <div class="theme-buttons" style="display: none;">
       <div class="button-container">
         <button @click="applyThemeGlobally" class="theme-btn apply">
           Aplicar paleta como theme
@@ -389,16 +389,13 @@ const restoreDefaultTheme = () => {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-.color-item:hover {
-  transform: translateY(-2px);
-}
-
 .color-swatch-container {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .color-swatch {
@@ -522,9 +519,10 @@ const restoreDefaultTheme = () => {
   align-items: center;
   justify-content: center;
   font-size: 1rem;
-  background: var(--theme-quinary);
+  background: linear-gradient(135deg, #f7fafc, #ffffff);
   border: 1px solid var(--theme-border);
   color: var(--theme-quaternary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .action-btn:hover {
@@ -556,7 +554,7 @@ const restoreDefaultTheme = () => {
 
 /* Estilos específicos para cada tipo de botón */
 .copy-btn {
-  background: var(--theme-quinary);
+  background: linear-gradient(135deg, #f7fafc, #ffffff);
   border: 1px solid var(--theme-border);
   border-radius: 50%;
   width: 24px;
@@ -569,12 +567,14 @@ const restoreDefaultTheme = () => {
   font-size: 12px;
   color: var(--theme-quaternary);
   font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .copy-btn:hover {
-  background: var(--theme-quaternary);
-  color: var(--theme-tertiary);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  color: white;
   transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .color-swatch {
@@ -589,6 +589,8 @@ const restoreDefaultTheme = () => {
   flex-direction: column;
   gap: 8px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .color-hex {
@@ -662,15 +664,17 @@ const restoreDefaultTheme = () => {
 }
 
 .theme-btn.apply {
-  background: var(--theme-primary);
-  color: var(--theme-tertiary);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  color: white;
   border-color: var(--theme-primary);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .theme-btn.restore {
-  background: var(--theme-quinary);
+  background: linear-gradient(135deg, #f7fafc, #ffffff);
   color: var(--theme-quaternary);
   border-color: var(--theme-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .theme-btn:hover {
@@ -680,19 +684,289 @@ const restoreDefaultTheme = () => {
 }
 
 @media (max-width: 768px) {
+  .palette-container {
+    padding: 12px;
+    max-height: calc(100vh - 120px);
+    border-radius: 12px;
+  }
+  
+  .palette-container h3 {
+    font-size: 1.1rem;
+    padding: 12px 0 16px 0;
+    margin-bottom: 16px;
+  }
+  
   .palette-display {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 0 12px;
+    max-height: calc(100vh - 280px);
+  }
+  
+  .color-item {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    min-height: 120px;
+    padding: 16px 12px;
+  }
+  
+  .color-swatch-container {
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .color-swatch {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .color-swatch.original::after,
+  .color-swatch.current.has-changes::after {
+    font-size: 7px;
+    padding: 1px 4px;
+    top: -6px;
+  }
+  
+  .color-info {
+    gap: 6px;
+    width: 100%;
+    max-width: 200px;
+    text-align: center;
+  }
+  
+  .color-hex {
+    font-size: 1rem;
+    word-break: break-all;
+    overflow-wrap: break-word;
+  }
+  
+  .color-rgb {
+    font-size: 0.8rem;
+    word-break: break-all;
+    overflow-wrap: break-word;
+  }
+  
+  .color-percentage {
+    font-size: 0.9rem;
+  }
+  
+  .color-actions {
+    margin-left: 0;
+    padding-left: 0;
+    flex-direction: row;
+    gap: 8px;
+    justify-content: center;
+  }
+  
+  .action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
   }
   
   .theme-buttons {
     flex-direction: column;
-    align-items: center;
+    gap: 12px;
+    padding: 0 12px 16px 12px;
+  }
+  
+  .button-container {
+    width: 100%;
+  }
+  
+  .theme-btn {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 0.9rem;
+  }
+  
+  .palette-info {
+    margin: 16px 12px;
+    padding: 12px;
+  }
+  
+  .info-message {
+    font-size: 0.9rem;
+    flex-direction: column;
+    gap: 6px;
   }
 }
 
 @media (max-width: 480px) {
+  .palette-container {
+    padding: 8px;
+    max-height: calc(100vh - 100px);
+  }
+  
+  .palette-container h3 {
+    font-size: 1rem;
+    padding: 8px 0 12px 0;
+    margin-bottom: 12px;
+  }
+  
   .palette-display {
-    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 0 8px;
+    max-height: calc(100vh - 240px);
+  }
+  
+  .color-item {
+    min-height: 100px;
+    padding: 12px 8px;
+    gap: 8px;
+  }
+  
+  .color-swatch {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .color-swatch.original::after,
+  .color-swatch.current.has-changes::after {
+    font-size: 6px;
+    padding: 1px 3px;
+    top: -5px;
+  }
+  
+  .color-info {
+    max-width: 180px;
+    gap: 4px;
+  }
+  
+  .color-hex {
+    font-size: 0.9rem;
+  }
+  
+  .color-rgb {
+    font-size: 0.75rem;
+  }
+  
+  .color-percentage {
+    font-size: 0.8rem;
+  }
+  
+  .action-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+  
+  .theme-btn {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+  }
+  
+  .palette-info {
+    margin: 12px 8px;
+    padding: 10px;
+  }
+  
+  .info-message {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .palette-container {
+    padding: 6px;
+  }
+  
+  .palette-container h3 {
+    font-size: 0.9rem;
+    padding: 6px 0 10px 0;
+  }
+  
+  .palette-display {
+    padding: 0 6px;
+  }
+  
+  .color-item {
+    padding: 10px 6px;
+    min-height: 90px;
+  }
+  
+  .color-swatch {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .color-info {
+    max-width: 160px;
+  }
+  
+  .color-hex {
+    font-size: 0.8rem;
+  }
+  
+  .color-rgb {
+    font-size: 0.7rem;
+  }
+  
+  .color-percentage {
+    font-size: 0.75rem;
+  }
+  
+  .action-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 9px;
+  }
+  
+  .theme-btn {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Mejoras específicas para pantallas muy pequeñas */
+@media (max-width: 320px) {
+  .palette-container {
+    padding: 4px;
+  }
+  
+  .palette-display {
+    padding: 0 4px;
+  }
+  
+  .color-item {
+    padding: 8px 4px;
+    min-height: 80px;
+  }
+  
+  .color-swatch {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .color-info {
+    max-width: 140px;
+  }
+  
+  .color-hex {
+    font-size: 0.75rem;
+  }
+  
+  .color-rgb {
+    font-size: 0.65rem;
+  }
+  
+  .color-percentage {
+    font-size: 0.7rem;
+  }
+  
+  .action-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 8px;
+  }
+  
+  .theme-btn {
+    padding: 8px 10px;
+    font-size: 0.75rem;
   }
 }
 
@@ -766,67 +1040,6 @@ const restoreDefaultTheme = () => {
   
   .notification-text {
     font-size: 13px;
-  }
-}
-
-/* Responsive para móviles */
-@media (max-width: 768px) {
-  .theme-buttons {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .button-container {
-    width: 100%;
-  }
-  
-  .theme-btn {
-    width: 100%;
-    padding: 12px 16px;
-  }
-  
-  .color-actions {
-    margin-left: 8px;
-    padding-left: 5px;
-  }
-  
-  .action-btn {
-    width: 24px;
-    height: 24px;
-    font-size: 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .palette-display {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  
-  .color-item {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 10px;
-    min-height: 90px;
-  }
-  
-  .color-actions {
-    margin-left: 0;
-    padding-left: 0;
-    flex-direction: row;
-    gap: 8px;
-  }
-  
-  .action-btn {
-    width: 26px;
-    height: 26px;
-    font-size: 11px;
-  }
-  
-  .palette-container {
-    padding: 15px;
-    max-height: calc(100vh - 150px);
   }
 }
 

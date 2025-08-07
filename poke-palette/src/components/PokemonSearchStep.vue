@@ -19,7 +19,7 @@
           <PokeballLoader 
             size="large" 
             variant="primary"
-            message="¡Atrapando Pokémon!"
+            message="Analizando Pokémon!"
           />
         </div>
         

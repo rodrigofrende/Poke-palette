@@ -45,7 +45,33 @@ export function restoreDefaultTheme() {
   applyTheme(defaultTheme)
 }
 
-// Función para generar un tema a partir de una paleta de colores
+// Función para calcular contraste entre dos colores
+function getContrastRatio(color1, color2) {
+  const l1 = calculateLuminance(color1)
+  const l2 = calculateLuminance(color2)
+  const lighter = Math.max(l1, l2)
+  const darker = Math.min(l1, l2)
+  
+  return (lighter + 0.05) / (darker + 0.05)
+}
+
+// Función para encontrar el mejor color de texto para un fondo dado
+function findBestTextColor(backgroundColor, options = ['#000000', '#ffffff']) {
+  let bestColor = options[0]
+  let bestContrast = 0
+  
+  for (const textColor of options) {
+    const contrast = getContrastRatio(backgroundColor, textColor)
+    if (contrast > bestContrast) {
+      bestContrast = contrast
+      bestColor = textColor
+    }
+  }
+  
+  return bestColor
+}
+
+// Función para generar un tema a partir de una paleta de colores con el mejor contraste
 export function generateThemeFromPalette(palette) {
   if (!palette || palette.length === 0) {
     return defaultTheme
@@ -79,57 +105,65 @@ export function generateThemeFromPalette(palette) {
   const lightColors = colors.filter(c => c.brightness > 150)
   const darkColors = colors.filter(c => c.brightness < 100)
   
-  const textColor = darkColors.length > 0 ? darkColors[0].hex : defaultTheme.quaternary
+  // Seleccionar el mejor color de fondo
   const backgroundColor = lightColors.length > 0 ? lightColors[0].hex : defaultTheme.tertiary
   
-  // Generar colores de borde y acentos
-  const borderColor = colors.find(c => c.brightness > 200)?.hex || defaultTheme.border
+  // Encontrar el mejor color de texto para el fondo seleccionado
+  const textColor = findBestTextColor(backgroundColor)
+  
+  // Generar colores de borde con buen contraste
+  const borderColor = findBestTextColor(backgroundColor, ['#000000', '#ffffff', '#cccccc'])
+  const borderHoverColor = findBestTextColor(backgroundColor, ['#000000', '#ffffff', '#999999'])
+  
+  // Encontrar colores de acento que funcionen bien con el tema
   const accentColor = colors.find(c => c.saturation > 100)?.hex || primary
   
-  return {
+  // Generar colores adicionales con buen contraste
+  const additionalLight = lightColors[1]?.hex || defaultTheme.quinary
+  const additionalDark = darkColors[0]?.hex || defaultTheme.septenary
+  
+  // Crear el tema optimizado
+  const optimizedTheme = {
     primary,
     secondary,
     tertiary: backgroundColor,
     quaternary: textColor,
-    quinary: lightColors[1]?.hex || defaultTheme.quinary,
+    quinary: additionalLight,
     border: borderColor,
-    borderHover: colors.find(c => c.brightness > 180)?.hex || defaultTheme.borderHover,
+    borderHover: borderHoverColor,
     senary: colors.find(c => c.brightness > 150 && c.brightness < 200)?.hex || defaultTheme.senary,
-    septenary: colors.find(c => c.brightness > 100 && c.brightness < 150)?.hex || defaultTheme.septenary,
+    septenary: additionalDark,
     octonary: colors.find(c => c.brightness < 100)?.hex || defaultTheme.octonary
   }
+  
+  // Verificar y mejorar el contraste de todos los elementos
+  return optimizeThemeContrast(optimizedTheme)
 }
 
-// Función para mejorar el contraste de un tema
-export function improveThemeContrast(theme) {
-  const improvedTheme = { ...theme }
+// Función para optimizar el contraste de un tema completo
+function optimizeThemeContrast(theme) {
+  const optimized = { ...theme }
   
-  // Función para calcular contraste
-  function getContrastRatio(color1, color2) {
-    const l1 = calculateLuminance(color1)
-    const l2 = calculateLuminance(color2)
-    const lighter = Math.max(l1, l2)
-    const darker = Math.min(l1, l2)
-    
-    return (lighter + 0.05) / (darker + 0.05)
+  // Optimizar contraste de texto principal
+  const mainTextContrast = getContrastRatio(optimized.quaternary, optimized.tertiary)
+  if (mainTextContrast < 4.5) {
+    optimized.quaternary = findBestTextColor(optimized.tertiary)
   }
   
-  // Mejorar contraste de texto
-  const textContrast = getContrastRatio(improvedTheme.quaternary, improvedTheme.tertiary)
-  if (textContrast < 4.5) {
-    // Si el contraste es bajo, usar negro o blanco según el fondo
-    const bgLuminance = calculateLuminance(improvedTheme.tertiary)
-    improvedTheme.quaternary = bgLuminance > 0.5 ? '#000000' : '#ffffff'
-  }
-  
-  // Mejorar contraste de bordes
-  const borderContrast = getContrastRatio(improvedTheme.border, improvedTheme.tertiary)
+  // Optimizar contraste de bordes
+  const borderContrast = getContrastRatio(optimized.border, optimized.tertiary)
   if (borderContrast < 3) {
-    improvedTheme.border = improvedTheme.quaternary
-    improvedTheme.borderHover = improvedTheme.quaternary
+    optimized.border = findBestTextColor(optimized.tertiary, ['#000000', '#ffffff', '#cccccc'])
+    optimized.borderHover = findBestTextColor(optimized.tertiary, ['#000000', '#ffffff', '#999999'])
   }
   
-  return improvedTheme
+  // Optimizar contraste de elementos secundarios
+  const secondaryTextContrast = getContrastRatio(optimized.senary, optimized.tertiary)
+  if (secondaryTextContrast < 3) {
+    optimized.senary = findBestTextColor(optimized.tertiary, ['#000000', '#ffffff', '#666666'])
+  }
+  
+  return optimized
 }
 
 // Función para cargar el tema guardado
@@ -168,7 +202,6 @@ export default {
   applyTheme,
   restoreDefaultTheme,
   generateThemeFromPalette,
-  improveThemeContrast,
   loadSavedTheme,
   getCurrentTheme,
   getDefaultTheme,

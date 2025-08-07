@@ -9,122 +9,33 @@
       @close="closeErrorNotification"
     />
     
+    <!-- Progreso de análisis -->
+    <AnalysisProgress
+      :show="isAnalyzing"
+      :progress="analysisProgress || 0"
+      :message="analysisMessage || ''"
+    />
+    
     <!-- Pantalla de bienvenida -->
     <WelcomeScreen v-if="showWelcome" @start-app="startApp" />
     
     <!-- Contenido principal (oculto durante la bienvenida) -->
-    <div v-if="!showWelcome" class="main-content">
-      <!-- Breadcrumb de progreso con controles -->
-      <div class="progress-breadcrumb">
-        <!-- Botón Anterior (izquierda) -->
-        <button 
-          v-if="currentStep > 1" 
-          @click="prevStep" 
-          :disabled="!canGoBack"
-          class="nav-btn-compact back"
-        >
-          ← Anterior
-        </button>
-        
-        <!-- Contenido central -->
-        <div class="breadcrumb-center">
-          <!-- Información del step actual -->
-          <div class="step-header-info">
-            <div class="step-header-icon">{{ getStepIcon(currentStep) }}</div>
-            <div class="step-header-text">
-              <h3 class="step-header-title">{{ getStepTitle(currentStep) }}</h3>
-              <p class="step-header-subtitle">{{ getStepSubtitle(currentStep) }}</p>
-            </div>
-          </div>
-          
-          <!-- Información del Pokémon en el header -->
-          <div v-if="selectedPokemon" class="pokemon-header-info">
-            <img 
-              :src="selectedPokemon.imageUrl" 
-              :alt="selectedPokemon.name"
-              class="pokemon-header-image"
-            />
-            <div class="pokemon-header-text">
-              <span class="pokemon-header-name">{{ formatPokemonName(selectedPokemon.name) }}</span>
-              <span class="pokemon-header-id">#{{ selectedPokemon.id }}</span>
-            </div>
-            <button 
-              @click="clearSelection" 
-              class="clear-btn-header"
-              title="Limpiar selección"
-            >
-              ✖️
-            </button>
-          </div>
-          
-          <div class="breadcrumb-steps">
-            <div 
-              class="breadcrumb-step" 
-              :class="{ 
-                active: currentStep >= 1, 
-                completed: currentStep > 1, 
-                clickable: canNavigateToStep(1),
-                disabled: !canNavigateToStep(1) && currentStep !== 1
-              }"
-              @click="goToStep(1)"
-              :title="getStepTooltip(1)"
-            >
-              <span class="step-number">1</span>
-              <span class="step-label">Buscar Pokémon</span>
-            </div>
-            <div class="breadcrumb-arrow" v-if="currentStep >= 2">→</div>
-            <div 
-              class="breadcrumb-step" 
-              :class="{ 
-                active: currentStep >= 2, 
-                completed: currentStep > 2, 
-                clickable: canNavigateToStep(2),
-                disabled: !canNavigateToStep(2) && currentStep !== 2
-              }"
-              @click="goToStep(2)"
-              :title="getStepTooltip(2)"
-            >
-              <span class="step-number">2</span>
-              <span class="step-label">Generar Paleta</span>
-            </div>
-            <div class="breadcrumb-arrow" v-if="currentStep >= 3">→</div>
-            <div 
-              class="breadcrumb-step" 
-              :class="{ 
-                active: currentStep >= 3, 
-                completed: currentStep > 3, 
-                clickable: canNavigateToStep(3),
-                disabled: !canNavigateToStep(3) && currentStep !== 3
-              }"
-              @click="goToStep(3)"
-              :title="getStepTooltip(3)"
-            >
-              <span class="step-number">3</span>
-              <span class="step-label">Analizar Contraste</span>
-            </div>
-          </div>
-          
-          <!-- Botón de Mejorar/Restaurar Contraste (solo en paso 3) -->
-          <button 
-            v-if="currentStep === 3 && contrastAnalysis.length > 0" 
-            @click="isContrastImproved ? handleRestoreTheme() : improveGlobalContrast()" 
-            class="improve-btn-compact"
-            :class="{ 'restore': isContrastImproved }"
-          >
-            {{ isContrastImproved ? '🔄 Restaurar Contraste' : '🎯 Mejorar Contraste' }}
-          </button>
-        </div>
-        
-        <!-- Botón Siguiente (derecha) -->
-        <button 
-          v-if="currentStep < 3" 
-          @click="nextStep" 
-          :disabled="!canGoNext"
-          class="nav-btn-compact next"
-        >
-          Siguiente →
-        </button>
-      </div>
+    <div v-if="!showWelcome" class="main-content" id="main-content" role="main" aria-label="Analizador de paletas de Pokémon">
+      <!-- Navegación de pasos refactorizada -->
+      <StepNavigation
+        id="navigation"
+        role="navigation"
+        aria-label="Navegación de pasos"
+        :current-step="currentStep"
+        :can-go-back="canGoBack"
+        :can-go-next="canGoNext"
+        :selected-pokemon="selectedPokemon"
+        :palette="palette"
+        @next-step="handleNextStep"
+        @prev-step="handlePrevStep"
+        @go-to-step="handleGoToStep"
+        @clear-selection="clearSelection"
+      />
       
       <!-- Contenido principal -->
       <!-- Paso 1: Búsqueda de Pokémon -->
@@ -135,7 +46,7 @@
           @pokemon-selected="handlePokemonSelected"
           @search-error="handleSearchError"
           @update-shiny="updateShiny"
-          @analyze-pokemon="analyzeSelectedPokemon"
+          @analyze-pokemon="handleAnalyzeSelectedPokemon"
         />
       </div>
       
@@ -156,9 +67,6 @@
           :contrast-analysis="contrastAnalysis"
           :palette="palette"
           :current-theme="currentTheme"
-          :is-contrast-improved="isContrastImproved"
-          @improve-contrast="improveGlobalContrast"
-          @restore-contrast="handleRestoreTheme"
         />
       </div>
     </div>
@@ -166,7 +74,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed, defineAsyncComponent } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, defineAsyncComponent } from 'vue'
 
 // Lazy loading para componentes grandes
 const PokemonSearchStep = defineAsyncComponent(() => 
@@ -184,52 +92,95 @@ const WelcomeScreen = defineAsyncComponent(() =>
 const ErrorNotification = defineAsyncComponent(() => 
   import('./ErrorNotification.vue')
 )
-import { formatPokemonName } from '../utils/formatters.js'
-import { 
-  getOptimalTextColor, 
-  applyContrastToElement, 
-  applyContrastToElements,
-  checkWCAGCompliance,
-  calculateContrastRatio,
-  rgbToHex
-} from '../utils/contrastUtils.js'
-import { 
-  rgbToHex as rgbToHexFromUtils,
-  rgbToHsl,
-  calculateColorDifference,
-  selectDiverseColors
-} from '../utils/colorUtils.js'
-import { 
-  applyTheme, 
-  restoreDefaultTheme, 
-  generateThemeFromPalette, 
-  improveThemeContrast,
-  getCurrentTheme 
-} from '../utils/themeManager.js'
+const AnalysisProgress = defineAsyncComponent(() => 
+  import('./shared/AnalysisProgress.vue')
+)
+const StepNavigation = defineAsyncComponent(() => 
+  import('./shared/StepNavigation.vue')
+)
+
+// Composables
+import { useThemeManager } from '../composables/useThemeManager.js'
+import { useStepNavigation } from '../composables/useStepNavigation.js'
+import { useErrorHandler } from '../composables/useErrorHandler.js'
+import { useGlobalErrorHandler } from '../composables/useGlobalErrorHandler.js'
+import { useAccessibility } from '../composables/useAccessibility.js'
+import { useColorExtraction } from '../composables/useColorExtraction.js'
+import { useWebWorkerColorExtraction } from '../composables/useWebWorkerColorExtraction.js'
+import { useContrastAnalysis } from '../composables/useContrastAnalysis.js'
+
+// Utils
 import { shouldShowWelcome, markWelcomeAsSeen } from '../utils/welcomeManager.js'
-import { PALETTE_CONFIG } from '../config/constants.js'
 import { preloadComponent } from '../utils/lazyLoader.js'
 
-// Reactive data
+// Inicializar composables
+const {
+  currentStep,
+  canGoBack,
+  nextStep,
+  prevStep,
+  goToStep,
+  canNavigateToStep,
+  getStepTooltip,
+  getStepName,
+  getStepIcon,
+  getStepTitle,
+  getStepSubtitle
+} = useStepNavigation()
+
+// Usar Web Worker si está disponible, sino fallback a procesamiento síncrono
+const webWorkerExtraction = useWebWorkerColorExtraction()
+const fallbackExtraction = useColorExtraction()
+
+const useWebWorker = webWorkerExtraction.isWorkerSupported()
+
+const {
+  palette,
+  isAnalyzing,
+  analyzeSelectedPokemon,
+  updatePalette,
+  clearPalette,
+  analysisProgress,
+  analysisMessage
+} = useWebWorker ? webWorkerExtraction : fallbackExtraction
+
+const {
+  contrastAnalysis,
+  isAnalyzingContrast,
+  analyzePaletteContrast,
+  clearContrastAnalysis
+} = useContrastAnalysis()
+
+const {
+  currentTheme,
+  originalTheme,
+  handleApplyTheme,
+  handleRestoreTheme,
+  resetThemeState
+} = useThemeManager()
+
+const {
+  errorNotification,
+  showErrorNotification,
+  closeErrorNotification,
+  handleSearchError,
+  handleAnalysisError,
+  handleNetworkError
+} = useErrorHandler()
+
+const {
+  initializeA11y,
+  announce,
+  enhanceElement,
+  cleanupA11y
+} = useAccessibility()
+
+// Estado local específico del componente
 const showWelcome = ref(shouldShowWelcome())
 const selectedPokemon = ref(null)
-const palette = ref([])
 const isShiny = ref(false)
-const contrastAnalysis = ref([])
-const currentStep = ref(1) // 1, 2, 3
-const currentTheme = ref(getCurrentTheme())
-const isContrastImproved = ref(false)
-const originalTheme = ref(null) // Guardar el tema original cuando se aplica la paleta
-
-// Variables para manejo de errores y loading
 const loadingPokemon = ref(false)
 const selectingPokemon = ref(false)
-const errorNotification = ref({
-  show: false,
-  title: '',
-  message: '',
-  type: 'error'
-})
 
 // Watch for palette changes to enable next step
 watch(palette, (newPalette) => {
@@ -248,10 +199,6 @@ watch(contrastAnalysis, (newAnalysis) => {
 })
 
 // Computed properties para validación de navegación
-const canGoBack = computed(() => {
-  return currentStep.value > 1
-})
-
 const canGoNext = computed(() => {
   switch (currentStep.value) {
     case 1:
@@ -270,60 +217,76 @@ const handlePokemonSelected = (pokemon) => {
   // Si se pasa null, limpiar la selección
   if (pokemon === null) {
     selectedPokemon.value = null
-    // Resetear estados de contraste al limpiar selección
-    isContrastImproved.value = false
-    originalTheme.value = null
-    contrastAnalysis.value = []
+    clearPalette()
+    clearContrastAnalysis()
+    resetThemeState()
     return
   }
   
   // Si es el mismo Pokémon pero con imagen diferente, actualizar solo la imagen
   if (selectedPokemon.value && selectedPokemon.value.id === pokemon.id) {
     selectedPokemon.value.imageUrl = pokemon.imageUrl
-    console.log('🖼️ Imagen actualizada para el mismo Pokémon:', pokemon.imageUrl)
   } else {
     // Es un Pokémon diferente, reemplazar completamente
     selectedPokemon.value = pokemon
-    // Resetear estados de contraste al seleccionar nuevo Pokémon
-    isContrastImproved.value = false
-    originalTheme.value = null
-    contrastAnalysis.value = []
+    clearPalette()
+    clearContrastAnalysis()
+    resetThemeState()
   }
 }
 
 const updateShiny = (value) => {
-  console.log('🎨 Actualizando shiny en componente principal:', value)
   isShiny.value = value
 }
 
-// Funciones para manejo de errores
-const showErrorNotification = (title, message, type = 'error') => {
-  errorNotification.value = {
-    show: true,
-    title,
-    message,
-    type
+// Manejadores de eventos para la navegación
+const handleNextStep = () => {
+  // Usar la lógica local de canGoNext en lugar de la del composable
+  if (canGoNext.value) {
+    currentStep.value++
+    
+    // Si vamos al paso 3, asegurar que el análisis de contraste esté listo
+    if (currentStep.value === 3 && palette.value.length > 0 && contrastAnalysis.value.length === 0) {
+      analyzePaletteContrast(palette.value)
+    }
   }
 }
 
-const closeErrorNotification = () => {
-  errorNotification.value.show = false
+const handlePrevStep = () => {
+  prevStep()
 }
 
-const handleSearchError = (errorData) => {
-  showErrorNotification(errorData.title, errorData.message, errorData.type)
+const handleGoToStep = (step) => {
+  const canNavigate = (step) => {
+    if (step === currentStep.value) return false
+    
+    switch (step) {
+      case 1: return true
+      case 2: return selectedPokemon.value !== null
+      case 3: return selectedPokemon.value !== null && palette.value.length > 0
+      default: return false
+    }
+  }
+  
+  if (canNavigate(step)) {
+    goToStep(step)
+    
+    // Si vamos al paso 3, asegurar que el análisis de contraste esté listo
+    if (step === 3 && palette.value.length > 0 && contrastAnalysis.value.length === 0) {
+      analyzePaletteContrast(palette.value)
+    }
+  }
 }
 
 const clearSelection = () => {
   // Limpiar completamente la selección y volver al inicio
   selectedPokemon.value = null
-  palette.value = []
-  contrastAnalysis.value = []
+  clearPalette()
+  clearContrastAnalysis()
   currentStep.value = 1
-  isContrastApplied.value = false
-  restoreDefaultTheme()
   
-  console.log('🏠 Volviendo al inicio - selección limpiada')
+  // Restaurar tema por defecto
+  handleRestoreTheme()
 }
 
 // Función para iniciar la app después de la pantalla de bienvenida
@@ -332,319 +295,59 @@ const startApp = () => {
   markWelcomeAsSeen()
 }
 
-// Función para analizar contraste de la paleta
-function analyzePaletteContrast() {
-  console.log('🔍 Iniciando análisis de contraste...');
-  console.log('Paleta actual:', palette.value);
-  
-  const analysis = [];
-  
-  // Analizar cada color de la paleta con ambos tipos de texto
-  palette.value.forEach((color, index) => {
-    const background = color.hex;
-    
-    console.log(`📊 Analizando color ${index + 1}:`, background);
-    
-    // Validar que el color tenga el formato correcto
-    if (!background || typeof background !== 'string' || !background.startsWith('#')) {
-      console.warn('❌ Invalid color format in palette:', background);
-      return; // Saltar este color
-    }
-    
-    // Test con texto blanco
-    const whiteText = '#ffffff';
-    const whiteRatio = calculateContrastRatio(whiteText, background);
-    const whiteCompliance = checkWCAGCompliance(whiteText, background);
-    
-    console.log(`  📝 Texto blanco: ratio=${whiteRatio}, passes=${whiteCompliance.passes}`);
-    
-    // Test con texto negro
-    const blackText = '#000000';
-    const blackRatio = calculateContrastRatio(blackText, background);
-    const blackCompliance = checkWCAGCompliance(blackText, background);
-    
-    console.log(`  📝 Texto negro: ratio=${blackRatio}, passes=${blackCompliance.passes}`);
-    
-    // Crear un solo objeto que contenga ambos casos
-    analysis.push({
-      background,
-      whiteText,
-      blackText,
-      whiteRatio,
-      blackRatio,
-      whitePasses: whiteCompliance.passes,
-      blackPasses: blackCompliance.passes,
-      colorIndex: index
-    });
-  });
-  
-  console.log('✅ Análisis completado:', analysis);
-  contrastAnalysis.value = analysis;
-}
+// Los métodos de análisis ahora están en los composables
 
-const analyzeSelectedPokemon = async () => {
+const handleAnalyzeSelectedPokemon = async () => {
   if (!selectedPokemon.value) return
   
-  // Create a canvas to analyze the Pokémon image
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  const img = new Image()
-  
-  img.onload = () => {
-    canvas.width = img.width
-    canvas.height = img.height
-    ctx.drawImage(img, 0, 0)
+  try {
+    announce(`Analizando colores de ${selectedPokemon.value.name}...`)
     
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    const colors = extractColorsFromImageData(imageData)
-    palette.value = colors
+    const colors = await analyzeSelectedPokemon(selectedPokemon.value)
     
     // Analizar contraste después de generar la paleta
-    analyzePaletteContrast();
+    analyzePaletteContrast(colors)
     
     // Auto-navigate to palette tab
     currentStep.value = 2
+    
+    announce(`Paleta de ${colors.length} colores generada para ${selectedPokemon.value.name}. Navegando al paso de paleta.`)
+  } catch (error) {
+    announce('Error al analizar el Pokémon. Por favor, intenta de nuevo.', 'assertive')
+    handleAnalysisError(error)
   }
-  
-  img.crossOrigin = 'anonymous'
-  img.src = selectedPokemon.value.imageUrl
 }
 
-const extractColorsFromImageData = (imageData) => {
-  const data = imageData.data
-  const colorMap = new Map()
-  let totalSampledPixels = 0
-  
-  console.log('🔍 Iniciando extracción de colores...')
-  
-  // Sample pixels (every N pixels for better performance)
-  for (let i = 0; i < data.length; i += PALETTE_CONFIG.SAMPLE_RATE) {
-    const r = data[i]
-    const g = data[i + 1]
-    const b = data[i + 2]
-    const a = data[i + 3]
-    
-    // Skip transparent pixels
-    if (a < 128) continue
-    
-    totalSampledPixels++
-    
-    // Quantize colors to reduce noise
-    const quantizedR = Math.round(r / PALETTE_CONFIG.QUANTIZATION_FACTOR) * PALETTE_CONFIG.QUANTIZATION_FACTOR
-    const quantizedG = Math.round(g / PALETTE_CONFIG.QUANTIZATION_FACTOR) * PALETTE_CONFIG.QUANTIZATION_FACTOR
-    const quantizedB = Math.round(b / PALETTE_CONFIG.QUANTIZATION_FACTOR) * PALETTE_CONFIG.QUANTIZATION_FACTOR
-    
-    const colorKey = `${quantizedR},${quantizedG},${quantizedB}`
-    colorMap.set(colorKey, (colorMap.get(colorKey) || 0) + 1)
-  }
-  
-  console.log(`📊 Píxeles muestreados: ${totalSampledPixels}`)
-  
-  // Convert to array and sort by frequency
-  const allColors = Array.from(colorMap.entries())
-    .map(([colorKey, count]) => {
-      const [r, g, b] = colorKey.split(',').map(Number)
-      const hex = rgbToHexFromUtils(r, g, b)
-      const percentage = (count / totalSampledPixels) * 100
-      
-      // Calculate HSL values for better color analysis
-      const hsl = rgbToHsl(r, g, b)
-      
-      return {
-        rgb: [r, g, b],
-        hex,
-        percentage,
-        hsl,
-        saturation: hsl.s,
-        lightness: hsl.l
-      }
-    })
-    .filter(color => color.percentage > PALETTE_CONFIG.MIN_PERCENTAGE) // Filtrar colores con porcentaje muy bajo
-    .sort((a, b) => b.percentage - a.percentage)
-  
-  console.log(`🎨 Colores encontrados: ${allColors.length}`)
-  
-  // Improved color selection algorithm - seleccionar colores más diversos
-  const selectedColors = selectDiverseColors(allColors, PALETTE_CONFIG.MAX_COLORS)
-  
-  console.log('✅ Paleta final:', selectedColors.map(c => `${c.hex} (${c.percentage.toFixed(1)}%)`))
-  
-  return selectedColors
-}
-
-
-
-// Funciones de gestión de temas
-function handleApplyTheme(colorHexes) {
-  // Guardar el tema actual como original antes de aplicar el nuevo
-  originalTheme.value = { ...currentTheme.value }
-  
-  const newTheme = generateThemeFromPalette(colorHexes)
-  applyTheme(newTheme)
-  currentTheme.value = getCurrentTheme()
-  isContrastImproved.value = false
-}
-
-function handleRestoreTheme() {
-  // Restaurar al tema original si existe, sino al tema por defecto
-  if (originalTheme.value) {
-    applyTheme(originalTheme.value)
-    currentTheme.value = getCurrentTheme()
-  } else {
-    restoreDefaultTheme()
-    currentTheme.value = getCurrentTheme()
-  }
-  isContrastImproved.value = false
-}
-
+// Manejo de actualización de paleta
 function handleUpdatePalette(updatedPalette) {
   // Actualizar la paleta con los colores editados
-  palette.value = updatedPalette
+  updatePalette(updatedPalette)
   
   // Re-analizar el contraste si estamos en el paso 3
   if (currentStep.value === 3 && updatedPalette.length > 0) {
-    analyzePaletteContrast()
-  }
-  
-  console.log('🎨 Paleta actualizada:', updatedPalette)
-}
-
-function improveGlobalContrast() {
-  // Guardar el tema actual antes de mejorarlo
-  if (!isContrastImproved.value) {
-    originalTheme.value = { ...currentTheme.value }
-  }
-  
-  const improvedTheme = improveThemeContrast(currentTheme.value)
-  applyTheme(improvedTheme)
-  currentTheme.value = getCurrentTheme()
-  isContrastImproved.value = true
-  
-  // Re-analizar contraste después de mejorar el tema
-  setTimeout(() => {
-    analyzePaletteContrast()
-  }, 100)
-}
-
-const nextStep = () => {
-  if (canGoNext) {
-    currentStep.value++
-    
-    // Si vamos al paso 3, asegurar que el análisis de contraste esté listo
-    if (currentStep.value === 3 && palette.value.length > 0 && contrastAnalysis.value.length === 0) {
-      console.log('🔄 Ejecutando análisis de contraste automáticamente...')
-      analyzePaletteContrast()
-    }
+    analyzePaletteContrast(updatedPalette)
   }
 }
 
-const prevStep = () => {
-  if (canGoBack) {
-    currentStep.value--
-  }
-}
-
-const goToStep = (step) => {
-  // Solo permitir navegación a steps que ya han sido completados o al step actual
-  if (canNavigateToStep(step)) {
-    currentStep.value = step
-    
-    // Si vamos al paso 3, asegurar que el análisis de contraste esté listo
-    if (step === 3 && palette.value.length > 0 && contrastAnalysis.value.length === 0) {
-      console.log('🔄 Ejecutando análisis de contraste automáticamente...')
-      analyzePaletteContrast()
-    }
-  }
-}
-
-const canNavigateToStep = (step) => {
-  // No permitir navegación al step actual
-  if (step === currentStep.value) return false
-  
-  switch (step) {
-    case 1:
-      return true // Siempre se puede volver al paso 1
-    case 2:
-      return selectedPokemon.value !== null // Solo si hay un Pokémon seleccionado
-    case 3:
-      // Solo permitir navegación al paso 3 si hay Pokémon seleccionado Y paleta generada
-      return selectedPokemon.value !== null && palette.value.length > 0
-    default:
-      return false
-  }
-}
-
-const getStepTooltip = (step) => {
-  if (step === currentStep.value) {
-    return `Paso actual: ${getStepName(step)}`
-  }
-  
-  if (canNavigateToStep(step)) {
-    return `Ir a: ${getStepName(step)}`
-  }
-  
-  // Mensajes específicos según el paso
-  switch (step) {
-    case 2:
-      return 'Selecciona un Pokémon primero para acceder a: Generar Paleta'
-    case 3:
-      if (!selectedPokemon.value) {
-        return 'Selecciona un Pokémon primero para acceder a: Analizar Contraste'
-      } else if (palette.value.length === 0) {
-        return 'Genera una paleta primero para acceder a: Analizar Contraste'
-      }
-      return 'Completa los pasos anteriores para acceder a: Analizar Contraste'
-    default:
-      return `Completa los pasos anteriores para acceder a: ${getStepName(step)}`
-  }
-}
-
-const getStepName = (step) => {
-  switch (step) {
-    case 1: return 'Buscar Pokémon'
-    case 2: return 'Generar Paleta'
-    case 3: return 'Analizar Contraste'
-    default: return 'Paso desconocido'
-  }
-}
-
-const getStepIcon = (step) => {
-  switch (step) {
-    case 1: return '🔍'
-    case 2: return '🎨'
-    case 3: return '📊'
-    default: return '❓'
-  }
-}
-
-const getStepTitle = (step) => {
-  switch (step) {
-    case 1: return 'Buscar Pokémon'
-    case 2: return 'Generar Paleta'
-    case 3: return 'Análisis de Contraste'
-    default: return 'Paso desconocido'
-  }
-}
-
-const getStepSubtitle = (step) => {
-  switch (step) {
-    case 1: return 'Encuentra cualquier Pokémon en la base de datos'
-    case 2: return 'Analiza la imagen y extrae los colores dominantes'
-    case 3: return 'Evalúa la legibilidad y accesibilidad de los colores'
-    default: return 'Descripción del paso'
-  }
-}
-
-// Inicializar tema al cargar
+// Inicializar tema y accesibilidad al cargar
 onMounted(() => {
-  console.log('🔄 Restaurando tema por defecto al cargar la página...')
-  restoreDefaultTheme()
-  currentTheme.value = getCurrentTheme()
-  isContrastImproved.value = false
+  // Restaurar tema por defecto
+  handleRestoreTheme()
+  
+  // Inicializar accesibilidad
+  initializeA11y()
+  
+  // Anunciar carga de la aplicación
+  announce('Pokémon Palette Analyzer cargado. Usa Tab para navegar.')
   
   // Preload componentes que probablemente se usarán
   preloadComponent(() => import('./ContrastAnalysisStep.vue'), 'ContrastAnalysisStep')
   preloadComponent(() => import('./PaletteGenerationStep.vue'), 'PaletteGenerationStep')
+})
+
+// Limpiar al desmontar
+onUnmounted(() => {
+  cleanupA11y()
 })
 </script>
 

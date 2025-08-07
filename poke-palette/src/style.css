@@ -52,11 +52,30 @@ body {
   min-height: 100vh;
 }
 
-/* Aplicar fuente Pokémon SOLO a títulos principales */
-h1, h2, h3 {
+/* Aplicar fuente Pokémon SOLO a títulos principales específicos */
+.welcome-screen h1,
+.welcome-screen h2,
+.welcome-screen h3,
+.step-title,
+.step-header-title,
+.mobile-step-title {
   font-family: var(--font-pokemon);
   line-height: 1.3;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Títulos que NO deben usar fuente Pokémon */
+.palette-container h3,
+.contrast-header h3,
+.analysis-header h3,
+.export-header h3,
+.info-tooltip h3,
+.tooltip-content h3,
+.notification h3,
+.modal h3 {
+  font-family: var(--font-body);
+  line-height: 1.3;
+  text-shadow: none;
 }
 
 h1 {
@@ -98,7 +117,11 @@ textarea,
 .theme-btn,
 .export-btn,
 .results-section h4,
-.export-section h4 {
+.export-section h4,
+.tooltip-content,
+.custom-tooltip,
+.notification-content,
+.modal-content {
   font-family: var(--font-body);
 }
 
@@ -111,6 +134,15 @@ pre,
 .generated-code,
 .generated-code pre {
   font-family: var(--font-mono);
+}
+
+/* Asegurar que tooltips y notificaciones usen fuente estándar */
+.custom-tooltip,
+.tooltip-content,
+.notification,
+.notification-content,
+.info-tooltip {
+  font-family: var(--font-body) !important;
 }
 
 a {
