@@ -1,20 +1,25 @@
 <template>
   <div class="step-container">
+    <!-- Botones de navegación superiores (fuera del contenedor principal) -->
+    <div class="top-navigation-buttons">
+      <button 
+        @click="setContrastActiveTab('overview')"
+        :class="['top-nav-btn', { active: contrastActiveTab === 'overview' }]"
+      >
+        <span class="top-nav-icon">📊</span>
+        <span class="top-nav-text">RESUMEN</span>
+      </button>
+      <button 
+        @click="setContrastActiveTab('details')"
+        :class="['top-nav-btn', { active: contrastActiveTab === 'details' }]"
+      >
+        <span class="top-nav-icon">🔍</span>
+        <span class="top-nav-text">DETALLES</span>
+      </button>
+    </div>
+
     <div class="step-content">
       <div v-if="contrastAnalysis.length > 0">
-        <!-- Navegación de tabs -->
-        <div class="contrast-tabs-navigation">
-          <button 
-            v-for="tab in contrastTabs" 
-            :key="tab.id"
-            @click="setContrastActiveTab(tab.id)"
-            :class="['contrast-tab-btn', { active: contrastActiveTab === tab.id }]"
-          >
-            <span class="tab-icon">{{ tab.icon }}</span>
-            <span class="tab-text">{{ tab.title }}</span>
-          </button>
-        </div>
-        
         <!-- Contenido de tabs -->
         <div class="contrast-tabs-content">
           <!-- Tab: Resumen -->
@@ -304,14 +309,32 @@ const getContrastLabel = (score) => {
 <style scoped>
 /* Estilos específicos para el análisis de contraste */
 
+.step-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.step-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+  flex: 1;
+}
+
 .contrast-tabs-navigation {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
   background: var(--theme-quinary);
   border-radius: 12px;
   padding: 6px;
   border: 1px solid var(--theme-border);
+  flex-shrink: 0;
 }
 
 .contrast-tab-btn {
@@ -477,8 +500,10 @@ const getContrastLabel = (score) => {
 
 .contrast-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .metric-card {

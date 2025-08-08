@@ -1,5 +1,23 @@
 <template>
   <div v-if="palette.length > 0" class="palette-step-container">
+    <!-- Botones de navegación superiores (fuera del contenedor principal) -->
+    <div class="top-navigation-buttons">
+      <button 
+        @click="handleTabChange('palette')"
+        :class="['top-nav-btn', { active: activeTab === 'palette' }]"
+      >
+        <span class="top-nav-icon">🎨</span>
+        <span class="top-nav-text">PALETA DE COLORES</span>
+      </button>
+      <button 
+        @click="handleTabChange('export')"
+        :class="['top-nav-btn', { active: activeTab === 'export' }]"
+      >
+        <span class="top-nav-icon">📤</span>
+        <span class="top-nav-text">EXPORTAR</span>
+      </button>
+    </div>
+
     <!-- Botones principales en la parte superior -->
     <div class="main-actions">
       <div class="action-buttons">
@@ -13,13 +31,6 @@
         </button>
       </div>
     </div>
-
-    <!-- Tabs de navegación -->
-    <TabNavigation 
-      :tabs="tabs"
-      :active-tab="activeTab"
-      @tab-change="handleTabChange"
-    />
 
     <!-- Contenido del tab Paleta de Colores -->
     <div v-if="activeTab === 'palette'" class="tab-content">
@@ -52,7 +63,6 @@
 import { computed, ref } from 'vue'
 import ColorPalette from './ColorPalette.vue'
 import ExportSection from './ExportSection.vue'
-import TabNavigation from './TabNavigation.vue'
 import { formatPokemonName } from '../utils/formatters.js'
 
 // Props
@@ -72,12 +82,6 @@ const emit = defineEmits(['apply-theme', 'restore-theme', 'update-palette'])
 
 // Reactive data
 const activeTab = ref('palette')
-
-// Tabs configuration
-const tabs = [
-  { id: 'palette', title: 'Paleta de Colores', icon: '🎨' },
-  { id: 'export', title: 'Exportar', icon: '📤' }
-]
 
 // Computed
 const pokemonName = computed(() => {
@@ -109,8 +113,18 @@ const handleUpdatePalette = (updatedPalette) => {
 .palette-step-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Estilos para los botones principales */
@@ -218,10 +232,51 @@ const handleUpdatePalette = (updatedPalette) => {
   opacity: 0.8;
 }
 
-/* Responsive */
+/* Responsive Design System */
+@media (max-width: 1200px) {
+  .palette-step-container {
+    gap: 20px;
+  }
+  
+  .main-actions {
+    padding: 16px;
+  }
+  
+  .action-btn {
+    min-width: 140px;
+  }
+}
+
 @media (max-width: 768px) {
+  .palette-step-container {
+    gap: 16px;
+  }
+  
   .main-actions {
     padding: 12px;
+  }
+  
+  .action-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .action-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .palette-step-container {
+    gap: 12px;
+  }
+  
+  .main-actions {
+    padding: 10px;
   }
   
   .action-buttons {
@@ -230,25 +285,36 @@ const handleUpdatePalette = (updatedPalette) => {
   }
   
   .action-btn {
-    min-width: auto;
     width: 100%;
-    padding: 14px 16px;
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .main-actions {
-    padding: 10px;
-  }
-  
-  .action-btn {
-    padding: 12px 14px;
+    min-width: auto;
+    padding: 12px;
     font-size: 0.85rem;
   }
   
   .btn-icon {
     font-size: 1rem;
+  }
+}
+
+/* Landscape Mode */
+@media (max-height: 500px) and (orientation: landscape) {
+  .palette-step-container {
+    gap: 12px;
+  }
+  
+  .main-actions {
+    padding: 8px;
+  }
+  
+  .action-buttons {
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .action-btn {
+    padding: 8px 12px;
+    min-width: 100px;
+    font-size: 0.8rem;
   }
 }
 </style> 

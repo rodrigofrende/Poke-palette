@@ -1,61 +1,65 @@
 <template>
-  <div class="progress-breadcrumb">
-    <!-- Desktop Layout -->
-    <div class="desktop-layout">
-      <!-- Botón Anterior -->
-      <button 
-        v-if="currentStep > 1" 
-        @click="emit('prev-step')" 
-        :disabled="!canGoBack"
-        class="nav-btn back"
-      >
-        <span class="nav-icon">←</span>
-        <span class="nav-text">Anterior</span>
-      </button>
-      
-      <!-- Contenido central -->
-      <div class="breadcrumb-center">
-        <!-- Header principal -->
-        <div class="main-header">
-          <div class="step-info">
-            <div class="step-badge">
-              <span class="step-icon">{{ getStepIcon(currentStep) }}</span>
-              <span class="step-number">{{ currentStep }}</span>
-            </div>
-            <div class="step-details">
-              <h3 class="step-title">{{ getStepTitle(currentStep) }}</h3>
-              <p class="step-subtitle">{{ getStepSubtitle(currentStep) }}</p>
-            </div>
+  <div class="step-sidebar" :class="{ 'sidebar-open': isMobileOpen }">
+    <!-- Mobile Toggle Button -->
+    <button 
+      class="mobile-toggle"
+      @click="toggleMobileSidebar"
+      :aria-label="isMobileOpen ? 'Cerrar navegación' : 'Abrir navegación'"
+    >
+      <span class="toggle-icon">{{ isMobileOpen ? '✕' : '☰' }}</span>
+    </button>
+
+    <!-- Sidebar Content -->
+    <div class="sidebar-content">
+      <!-- Header del Sidebar -->
+      <div class="sidebar-header">
+        <div class="app-title">
+          <span class="app-icon">🎨</span>
+          <h2 class="app-name">Pokémon Palette</h2>
+        </div>
+      </div>
+
+      <!-- Información del Paso Actual -->
+      <div class="current-step-section">
+        <div class="step-badge">
+          <span class="step-icon">{{ getStepIcon(currentStep) }}</span>
+          <span class="step-number">{{ currentStep }}</span>
+        </div>
+        <div class="step-details">
+          <h3 class="step-title">{{ getStepTitle(currentStep) }}</h3>
+          <p class="step-subtitle">{{ getStepSubtitle(currentStep) }}</p>
+        </div>
+      </div>
+
+      <!-- Pokémon Seleccionado -->
+      <div v-if="selectedPokemon" class="selected-pokemon-section">
+        <h4 class="section-title">Pokémon Seleccionado</h4>
+        <div class="pokemon-card">
+          <div class="pokemon-avatar">
+            <img 
+              :src="selectedPokemon.imageUrl" 
+              :alt="selectedPokemon.name"
+              class="pokemon-image"
+            />
+            <div class="pokemon-status"></div>
           </div>
-          
-          <!-- Información del Pokémon -->
-          <div v-if="selectedPokemon" class="pokemon-card">
-            <div class="pokemon-avatar">
-              <img 
-                :src="selectedPokemon.imageUrl" 
-                :alt="selectedPokemon.name"
-                class="pokemon-image"
-              />
-              <div class="pokemon-status"></div>
-            </div>
-            <div class="pokemon-info">
-              <span class="pokemon-name">{{ formatPokemonName(selectedPokemon.name) }}</span>
-              <span class="pokemon-id">#{{ selectedPokemon.id }}</span>
-            </div>
-            <button 
+          <div class="pokemon-info">
+            <span class="pokemon-name">{{ formatPokemonName(selectedPokemon.name) }}</span>
+            <span class="pokemon-id">#{{ selectedPokemon.id }}</span>
+          </div>
+                      <button 
               @click="emit('clear-selection')" 
               class="clear-btn"
               title="Limpiar selección"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
+              <span class="clear-icon">×</span>
             </button>
-          </div>
         </div>
-        
-        <!-- Progress Steps -->
+      </div>
+
+      <!-- Progress Steps -->
+      <div class="progress-section">
+        <h4 class="section-title">Progreso</h4>
         <div class="progress-steps">
           <div 
             v-for="step in 3"
@@ -78,101 +82,46 @@
           </div>
         </div>
       </div>
-      
-      <!-- Botón Siguiente -->
-      <button 
-        v-if="currentStep < 3" 
-        @click="emit('next-step')" 
-        :disabled="!canGoNext"
-        class="nav-btn next"
-      >
-        <span class="nav-text">Siguiente</span>
-        <span class="nav-icon">→</span>
-      </button>
-    </div>
-    
-    <!-- Mobile Layout -->
-    <div class="mobile-layout">
-      <!-- Mobile Header -->
-      <div class="mobile-header">
-        <div class="mobile-step-info">
-          <div class="mobile-step-badge">
-            <span class="mobile-step-icon">{{ getStepIcon(currentStep) }}</span>
-            <span class="mobile-step-number">{{ currentStep }}/3</span>
-          </div>
-          <div class="mobile-step-text">
-            <h3 class="mobile-step-title">{{ getStepTitle(currentStep) }}</h3>
-          </div>
-        </div>
-        
-        <!-- Mobile Pokémon Info -->
-        <div v-if="selectedPokemon" class="mobile-pokemon">
-          <img 
-            :src="selectedPokemon.imageUrl" 
-            :alt="selectedPokemon.name"
-            class="mobile-pokemon-image"
-          />
-          <span class="mobile-pokemon-name">{{ formatPokemonName(selectedPokemon.name) }}</span>
+
+      <!-- Navegación -->
+      <div class="navigation-section">
+        <div class="nav-buttons">
           <button 
-            @click="emit('clear-selection')" 
-            class="mobile-clear-btn"
-            title="Limpiar"
+            v-if="currentStep > 1" 
+            @click="emit('prev-step')" 
+            :disabled="!canGoBack"
+            class="nav-btn back"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            <span class="nav-icon">←</span>
+            <span class="nav-text">Anterior</span>
+          </button>
+          
+          <button 
+            v-if="currentStep < 3" 
+            @click="emit('next-step')" 
+            :disabled="!canGoNext"
+            class="nav-btn next"
+          >
+            <span class="nav-text">Siguiente</span>
+            <span class="nav-icon">→</span>
           </button>
         </div>
       </div>
-      
-      <!-- Mobile Progress Bar -->
-      <div class="mobile-progress">
-        <div class="mobile-progress-bar">
-          <div 
-            class="mobile-progress-fill" 
-            :style="{ width: `${(currentStep / 3) * 100}%` }"
-          ></div>
-        </div>
-        <div class="mobile-progress-steps">
-          <div 
-            v-for="step in 3"
-            :key="step"
-            class="mobile-step-dot"
-            :class="{ 
-              active: currentStep >= step,
-              completed: currentStep > step
-            }"
-          ></div>
-        </div>
-      </div>
-      
-      <!-- Mobile Navigation -->
-      <div class="mobile-navigation">
-        <button 
-          v-if="currentStep > 1" 
-          @click="emit('prev-step')" 
-          :disabled="!canGoBack"
-          class="mobile-nav-btn back"
-        >
-          ←
-        </button>
-        <button 
-          v-if="currentStep < 3" 
-          @click="emit('next-step')" 
-          :disabled="!canGoNext"
-          class="mobile-nav-btn next"
-        >
-          →
-        </button>
-      </div>
     </div>
+
+    <!-- Mobile Overlay -->
+    <div 
+      v-if="isMobileOpen" 
+      class="mobile-overlay"
+      @click="closeMobileSidebar"
+    ></div>
   </div>
 </template>
 
 <script setup>
-import { formatPokemonName } from '../../utils/formatters.js'
+import { ref } from 'vue'
 
+// Props
 const props = defineProps({
   currentStep: {
     type: Number,
@@ -180,11 +129,11 @@ const props = defineProps({
   },
   canGoBack: {
     type: Boolean,
-    default: false
+    required: true
   },
   canGoNext: {
     type: Boolean,
-    default: false
+    required: true
   },
   selectedPokemon: {
     type: Object,
@@ -196,16 +145,33 @@ const props = defineProps({
   }
 })
 
+// Emits
 const emit = defineEmits([
   'next-step',
-  'prev-step', 
+  'prev-step',
   'go-to-step',
   'clear-selection'
 ])
 
+// Mobile sidebar state
+const isMobileOpen = ref(false)
+
+// Methods
+const toggleMobileSidebar = () => {
+  isMobileOpen.value = !isMobileOpen.value
+}
+
+const closeMobileSidebar = () => {
+  isMobileOpen.value = false
+}
+
 const handleStepClick = (step) => {
   if (canNavigateToStep(step)) {
     emit('go-to-step', step)
+    // Close mobile sidebar after navigation
+    if (window.innerWidth < 768) {
+      closeMobileSidebar()
+    }
   }
 }
 
@@ -213,14 +179,10 @@ const canNavigateToStep = (step) => {
   if (step === props.currentStep) return false
   
   switch (step) {
-    case 1:
-      return true
-    case 2:
-      return props.selectedPokemon !== null
-    case 3:
-      return props.selectedPokemon !== null && props.palette.length > 0
-    default:
-      return false
+    case 1: return true
+    case 2: return props.selectedPokemon !== null
+    case 3: return props.selectedPokemon !== null && props.palette.length > 0
+    default: return false
   }
 }
 
@@ -283,648 +245,495 @@ const getStepSubtitle = (step) => {
     default: return ''
   }
 }
+
+const formatPokemonName = (name) => {
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
 </script>
 
 <style scoped>
-.progress-breadcrumb {
-  margin-bottom: 16px;
+/* Sidebar Container */
+.step-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  transition: transform 0.3s ease;
 }
 
-/* Desktop Layout */
-.desktop-layout {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, var(--theme-quinary), var(--theme-tertiary));
+/* Mobile Toggle Button */
+.mobile-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 9999;
+  width: 56px;
+  height: 56px;
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--theme-border);
-  gap: 24px;
-  position: relative;
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  color: white;
+  border: 2px solid white;
+  cursor: pointer;
+  display: none; /* Hidden by default, shown in mobile */
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
 }
 
-.breadcrumb-center {
-  flex: 1;
+.mobile-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+}
+
+.mobile-toggle:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.toggle-icon {
+  transition: transform 0.3s ease;
+}
+
+/* Mobile specific improvements */
+@media (max-width: 767px) {
+  .mobile-toggle {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 9999;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+    color: white;
+    border: 2px solid white;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: bold;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+  }
+}
+
+/* Sidebar Content */
+.sidebar-content {
+  width: 320px;
+  height: 100vh;
+  background: linear-gradient(180deg, var(--theme-quinary) 0%, var(--theme-senary) 100%);
+  border-right: 1px solid var(--theme-border);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  max-width: 700px;
-  margin: 0 auto;
+  overflow-y: auto;
+  padding: 20px;
+  gap: 24px;
 }
 
-.main-header {
+/* Sidebar Header */
+.sidebar-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.app-title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: 24px;
-  padding: 0 12px;
+  gap: 12px;
 }
 
-.step-info {
+.app-icon {
+  font-size: 2rem;
+}
+
+.app-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--theme-primary);
+  margin: 0;
+}
+
+/* Current Step Section */
+.current-step-section {
   display: flex;
   align-items: center;
   gap: 16px;
-  flex: 1;
-  justify-content: flex-start;
+  padding: 16px;
+  background: var(--theme-quinary);
+  border-radius: 12px;
+  border: 1px solid var(--theme-border);
 }
 
 .step-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   width: 56px;
   height: 56px;
   background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
-  border-radius: 14px;
-  position: relative;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .step-icon {
-  font-size: 1.8rem;
-  margin-right: 6px;
+  font-size: 1.5rem;
 }
 
 .step-number {
   position: absolute;
   top: -6px;
   right: -6px;
-  background: var(--theme-quaternary);
-  color: var(--theme-tertiary);
-  border-radius: 50%;
   width: 24px;
   height: 24px;
+  background: var(--theme-quaternary);
+  border: 2px solid var(--theme-primary);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: bold;
-  border: 2px solid var(--theme-tertiary);
+  color: var(--theme-primary);
 }
 
 .step-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   flex: 1;
 }
 
 .step-title {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--theme-quaternary);
-  line-height: 1.2;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--theme-primary);
+  margin: 0 0 4px 0;
 }
 
 .step-subtitle {
+  font-size: 0.9rem;
+  color: var(--theme-quaternary);
   margin: 0;
-  font-size: 0.95rem;
-  color: var(--theme-senary);
-  opacity: 0.85;
   line-height: 1.4;
+}
+
+/* Selected Pokemon Section */
+.selected-pokemon-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--theme-primary);
+  margin: 0;
 }
 
 .pokemon-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 18px;
-  background: var(--theme-tertiary);
-  border-radius: 14px;
+  gap: 12px;
+  padding: 12px;
+  background: var(--theme-quaternary);
+  border-radius: 10px;
   border: 1px solid var(--theme-border);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
+  position: relative;
 }
 
 .pokemon-avatar {
   position: relative;
+  flex-shrink: 0;
 }
 
 .pokemon-image {
   width: 48px;
   height: 48px;
-  object-fit: contain;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--theme-quinary);
   padding: 4px;
 }
 
 .pokemon-status {
   position: absolute;
-  bottom: -3px;
-  right: -3px;
-  width: 14px;
-  height: 14px;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
   background: #10b981;
   border-radius: 50%;
-  border: 2px solid var(--theme-tertiary);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--theme-quaternary);
 }
 
 .pokemon-info {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .pokemon-name {
-  font-weight: 600;
-  color: var(--theme-quaternary);
   font-size: 1rem;
-  line-height: 1.2;
+  font-weight: bold;
+  color: var(--theme-primary);
 }
 
 .pokemon-id {
-  color: var(--theme-senary);
   font-size: 0.8rem;
+  color: var(--theme-quaternary);
   opacity: 0.8;
 }
 
 .clear-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  color: var(--theme-senary);
-  transition: all 0.2s;
+  background: var(--theme-quinary);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-quaternary);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 4px;
+  transition: all 0.3s ease;
+}
+
+.clear-btn .clear-icon {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--theme-quaternary);
+  line-height: 1;
+  display: block;
+  transition: all 0.3s ease;
 }
 
 .clear-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--theme-quaternary);
-  transform: scale(1.05);
+  background: var(--theme-primary);
+  color: white;
+  transform: scale(1.1);
+}
+
+.clear-btn:hover .clear-icon {
+  color: white;
+}
+
+/* Progress Section */
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .progress-steps {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  justify-content: center;
-  width: 100%;
-  padding: 0 20px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .progress-step {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 100px;
-  position: relative;
+  border: 1px solid transparent;
+}
+
+.progress-step:hover {
+  background: var(--theme-quaternary);
+  border-color: var(--theme-border);
 }
 
 .progress-step.active {
   background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
   color: white;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .progress-step.completed {
-  background: var(--theme-primary);
-  color: white;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.progress-step.clickable:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  background: var(--theme-quaternary);
+  border-color: var(--theme-primary);
 }
 
 .progress-step.disabled {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .step-circle {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--theme-quinary);
+  border: 2px solid var(--theme-border);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.9rem;
   font-weight: bold;
-  font-size: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.progress-step.active .step-circle {
+  background: white;
+  border-color: white;
+  color: var(--theme-primary);
+}
+
+.progress-step.completed .step-circle {
+  background: var(--theme-primary);
+  border-color: var(--theme-primary);
+  color: white;
 }
 
 .step-check {
-  color: white;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: bold;
 }
 
 .step-name {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  text-align: center;
-  line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Navigation Section */
+.navigation-section {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--theme-border);
+}
+
+.nav-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .nav-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
-  color: white;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 10px;
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.95rem;
-  z-index: 10;
-  position: relative;
-  min-width: 120px;
-  justify-content: center;
+  border: 2px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.nav-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+.nav-btn.back {
+  background: linear-gradient(135deg, var(--theme-quinary), var(--theme-senary));
+  color: var(--theme-primary);
+  border-color: var(--theme-border);
+}
+
+.nav-btn.back:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--theme-quaternary), var(--theme-quinary));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.nav-btn.next {
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  color: white;
+  border-color: var(--theme-primary);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.nav-btn.next:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .nav-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
+  transform: none !important;
 }
 
 .nav-icon {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: bold;
 }
 
 .nav-text {
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-/* Mobile Layout */
-.mobile-layout {
-  display: none;
+/* Mobile Overlay */
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
 }
 
-.mobile-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, var(--theme-quinary), var(--theme-tertiary));
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--theme-border);
-  margin-bottom: 12px;
-  position: relative;
-}
-
-.mobile-step-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  justify-content: center;
-}
-
-.mobile-step-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
-  border-radius: 8px;
-  position: relative;
-}
-
-.mobile-step-icon {
-  font-size: 1.2rem;
-}
-
-.mobile-step-number {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: var(--theme-quaternary);
-  color: var(--theme-tertiary);
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: bold;
-}
-
-.mobile-step-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--theme-quaternary);
-}
-
-.mobile-pokemon {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: var(--theme-tertiary);
-  border-radius: 8px;
-  border: 1px solid var(--theme-border);
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.mobile-pokemon-image {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  border-radius: 6px;
-}
-
-.mobile-pokemon-name {
-  font-weight: 500;
-  color: var(--theme-quaternary);
-  font-size: 0.8rem;
-}
-
-.mobile-clear-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  color: var(--theme-senary);
-  transition: all 0.2s;
-}
-
-.mobile-clear-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--theme-quaternary);
-}
-
-.mobile-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0 16px;
-}
-
-.mobile-progress-bar {
-  width: 100%;
-  height: 4px;
-  background: var(--theme-border);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.mobile-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--theme-primary), var(--theme-secondary));
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-.mobile-progress-steps {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.mobile-step-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--theme-border);
-  transition: all 0.3s ease;
-}
-
-.mobile-step-dot.active,
-.mobile-step-dot.completed {
-  background: var(--theme-primary);
-  transform: scale(1.2);
-}
-
-.mobile-navigation {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 16px;
-  gap: 12px;
-}
-
-.mobile-nav-btn {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 1rem;
-}
-
-.mobile-nav-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-}
-
-.mobile-nav-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Responsive Desktop */
-@media (max-width: 1200px) {
-  .breadcrumb-center {
-    max-width: 600px;
+/* Responsive Design */
+@media (max-width: 767px) {
+  .step-sidebar {
+    transform: translateX(-100%);
   }
   
-  .main-header {
-    gap: 20px;
+  .step-sidebar.sidebar-open {
+    transform: translateX(0);
   }
   
-  .step-title {
-    font-size: 1.3rem;
+  .sidebar-content {
+    width: 280px;
   }
   
-  .step-subtitle {
-    font-size: 0.9rem;
+  .mobile-toggle {
+    display: flex !important;
   }
 }
 
-@media (max-width: 1024px) {
-  .desktop-layout {
-    padding: 18px 20px;
-    gap: 20px;
+@media (min-width: 768px) {
+  .mobile-toggle {
+    display: none !important;
   }
   
-  .breadcrumb-center {
-    max-width: 550px;
+  .step-sidebar {
+    transform: translateX(0);
   }
   
-  .step-badge {
-    width: 52px;
-    height: 52px;
-  }
-  
-  .step-icon {
-    font-size: 1.6rem;
-  }
-  
-  .pokemon-card {
-    padding: 10px 16px;
-  }
-  
-  .pokemon-image {
-    width: 44px;
-    height: 44px;
-  }
-}
-
-@media (max-width: 900px) {
-  .desktop-layout {
-    padding: 16px 18px;
-    gap: 16px;
-  }
-  
-  .breadcrumb-center {
-    max-width: 500px;
-  }
-  
-  .main-header {
-    gap: 16px;
-  }
-  
-  .step-info {
-    gap: 12px;
-  }
-  
-  .step-badge {
-    width: 48px;
-    height: 48px;
-  }
-  
-  .step-icon {
-    font-size: 1.4rem;
-  }
-  
-  .step-title {
-    font-size: 1.2rem;
-  }
-  
-  .step-subtitle {
-    font-size: 0.85rem;
-  }
-  
-  .pokemon-card {
-    padding: 8px 14px;
-    gap: 10px;
-  }
-  
-  .pokemon-image {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .pokemon-name {
-    font-size: 0.9rem;
-  }
-  
-  .pokemon-id {
-    font-size: 0.75rem;
-  }
-  
-  .progress-steps {
-    gap: 8px;
-    padding: 0 16px;
-  }
-  
-  .progress-step {
-    min-width: 90px;
-    padding: 10px 14px;
-  }
-  
-  .step-circle {
-    width: 32px;
-    height: 32px;
-    font-size: 0.9rem;
-  }
-  
-  .step-name {
-    font-size: 0.75rem;
-  }
-  
-  .nav-btn {
-    padding: 10px 16px;
-    font-size: 0.9rem;
-    min-width: 100px;
-  }
-}
-
-@media (max-width: 768px) {
-  .desktop-layout {
+  .mobile-overlay {
     display: none;
   }
-  
-  .mobile-layout {
-    display: block;
-  }
 }
 
-@media (max-width: 480px) {
-  .mobile-header {
-    padding: 10px 12px;
-  }
-  
-  .mobile-step-badge {
-    width: 32px;
-    height: 32px;
-  }
-  
-  .mobile-step-icon {
-    font-size: 1rem;
-  }
-  
-  .mobile-step-title {
-    font-size: 0.9rem;
-  }
-  
-  .mobile-pokemon {
-    padding: 4px 8px;
-  }
-  
-  .mobile-pokemon-image {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .mobile-pokemon-name {
-    font-size: 0.75rem;
-  }
+/* Scrollbar Styling */
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: var(--theme-quinary);
+  border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-primary);
 }
 </style>

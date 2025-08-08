@@ -57,6 +57,8 @@
   overflow: auto;
   min-height: 0;
   height: 100%;
+  /* Altura mínima ajustada para evitar saltos de layout */
+  min-height: 300px;
 }
 
 /* Estados vacíos unificados */
@@ -384,4 +386,475 @@
 }
 
 /* Utilidades CSS */
+ 
+/* Sistema de Botones Unificado - Premium Design System */
+
+/* Variables para el sistema de botones */
+:root {
+  /* Gradientes premium */
+  --gradient-primary: linear-gradient(135deg, #9370DB 0%, #FF69B4 100%);
+  --gradient-secondary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-hover: linear-gradient(135deg, #FF69B4 0%, #9370DB 100%);
+  
+  /* Colores de estado */
+  --btn-active-bg: var(--gradient-primary);
+  --btn-inactive-bg: #ffffff;
+  --btn-active-text: #ffffff;
+  --btn-inactive-text: #2d3748;
+  --btn-border: #e2e8f0;
+  --btn-border-hover: #667eea;
+  
+  /* Sombras premium */
+  --btn-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --btn-shadow-hover: 0 4px 16px rgba(147, 112, 219, 0.3);
+  --btn-shadow-active: 0 4px 15px rgba(147, 112, 219, 0.3);
+  
+  /* Tamaños estándar */
+  --btn-padding: 12px 20px;
+  --btn-border-radius: 10px;
+  --btn-font-size: 0.9rem;
+  --btn-font-weight: 600;
+  --btn-min-width: 140px;
+  --btn-gap: 12px;
+}
+
+/* Botones de navegación superiores - Estilo Premium */
+.top-navigation-buttons {
+  display: flex;
+  gap: var(--btn-gap);
+  justify-content: center;
+  margin-bottom: 24px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.top-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: var(--btn-padding);
+  border-radius: var(--btn-border-radius);
+  font-weight: var(--btn-font-weight);
+  font-size: var(--btn-font-size);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid var(--btn-border);
+  min-width: var(--btn-min-width);
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--btn-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.top-nav-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-hover);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.top-nav-btn:hover::before {
+  opacity: 0.1;
+}
+
+.top-nav-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--btn-shadow-hover);
+  border-color: var(--btn-border-hover);
+}
+
+.top-nav-btn.active {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-text);
+  border-color: #9370DB;
+  box-shadow: var(--btn-shadow-active);
+  transform: translateY(-2px);
+}
+
+.top-nav-btn.active::before {
+  opacity: 0;
+}
+
+.top-nav-btn:not(.active) {
+  background: var(--btn-inactive-bg);
+  color: var(--btn-inactive-text);
+  border-color: var(--btn-border);
+}
+
+.top-nav-icon {
+  font-size: 1.1em;
+  position: relative;
+  z-index: 1;
+}
+
+.top-nav-text {
+  font-size: 0.8rem;
+  position: relative;
+  z-index: 1;
+  font-weight: var(--btn-font-weight);
+}
+
+/* Botones de acción principales - Estilo Premium */
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: var(--btn-padding);
+  border-radius: var(--btn-border-radius);
+  font-weight: var(--btn-font-weight);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  min-width: 160px;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--btn-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Estilos específicos para botones de copiar y restaurar */
+.action-btn.copy-btn,
+.action-btn.restore-btn {
+  min-width: auto;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--btn-inactive-bg);
+  color: var(--btn-inactive-text);
+  border: 2px solid var(--btn-border);
+}
+
+.action-btn.copy-btn:hover,
+.action-btn.restore-btn:hover {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-text);
+  transform: translateY(-2px);
+  box-shadow: var(--btn-shadow-hover);
+  border-color: var(--btn-border-hover);
+}
+
+.action-btn.restore-btn {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.action-btn.restore-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.action-btn.apply-theme,
+.action-btn.primary {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-text);
+  border-color: #9370DB;
+  box-shadow: var(--btn-shadow-active);
+}
+
+.action-btn.apply-theme:hover,
+.action-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--btn-shadow-hover);
+  background: var(--gradient-hover);
+}
+
+.action-btn.restore-theme,
+.action-btn.secondary {
+  background: var(--btn-inactive-bg);
+  color: var(--btn-inactive-text);
+  border-color: var(--btn-border);
+  box-shadow: var(--btn-shadow);
+}
+
+.action-btn.restore-theme:hover,
+.action-btn.secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--btn-shadow-hover);
+  border-color: var(--btn-border-hover);
+  background: linear-gradient(135deg, #ffffff, #f7fafc);
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-text {
+  font-weight: var(--btn-font-weight);
+  position: relative;
+  z-index: 1;
+}
+
+/* Botones de navegación de tabs - Estilo Premium */
+.tab-navigation {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 0;
+  padding: 0;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--btn-border-radius);
+  font-weight: var(--btn-font-weight);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  min-width: 100px;
+  justify-content: center;
+  box-shadow: var(--btn-shadow);
+  border: 2px solid var(--btn-border);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nav-btn:hover {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-text);
+  transform: translateY(-2px);
+  box-shadow: var(--btn-shadow-hover);
+  border-color: #9370DB;
+}
+
+.nav-btn.active {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-text);
+  border-color: #9370DB;
+  box-shadow: var(--btn-shadow-active);
+}
+
+.nav-btn:not(.active) {
+  background: var(--btn-inactive-bg);
+  color: var(--btn-inactive-text);
+  border-color: var(--btn-border);
+}
+
+.nav-icon {
+  font-size: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.nav-text {
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive Design para botones */
+@media (max-width: 1200px) {
+  .top-navigation-buttons {
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .top-nav-btn {
+    min-width: 130px;
+    padding: 12px 18px;
+  }
+  
+  .action-btn {
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-navigation-buttons {
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  .top-nav-btn {
+    padding: 10px 16px;
+    min-width: 120px;
+    font-size: 0.8rem;
+  }
+  
+  .top-nav-icon {
+    font-size: 1em;
+  }
+  
+  .top-nav-text {
+    font-size: 0.7rem;
+  }
+  
+  .action-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+  
+  .tab-navigation {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .nav-btn {
+    min-width: auto;
+    padding: 12px 16px;
+  }
+  
+  .nav-text {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-navigation-buttons {
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  
+  .top-nav-btn {
+    width: 100%;
+    min-width: auto;
+    padding: 12px 16px;
+    font-size: 0.75rem;
+  }
+  
+  .top-nav-icon {
+    font-size: 0.9em;
+  }
+  
+  .top-nav-text {
+    font-size: 0.65rem;
+  }
+  
+  .action-btn {
+    width: 100%;
+    min-width: auto;
+    padding: 12px;
+    font-size: 0.85rem;
+  }
+  
+  .btn-icon {
+    font-size: 1rem;
+  }
+  
+  .tab-navigation {
+    gap: 4px;
+  }
+  
+  .nav-btn {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+  }
+  
+  .nav-icon {
+    font-size: 14px;
+  }
+  
+  .nav-text {
+    font-size: 0.7rem;
+  }
+}
+
+/* Landscape Mode */
+@media (max-height: 500px) and (orientation: landscape) {
+  .top-navigation-buttons {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .top-nav-btn {
+    padding: 8px 12px;
+    min-width: 100px;
+    font-size: 0.8rem;
+  }
+  
+  .action-btn {
+    padding: 8px 12px;
+    min-width: 100px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Animaciones premium */
+@keyframes buttonPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.top-nav-btn:active,
+.action-btn:active,
+.nav-btn:active {
+  animation: buttonPulse 0.2s ease-in-out;
+}
+
+/* Efectos de hover mejorados */
+.top-nav-btn::after,
+.action-btn::after,
+.nav-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.top-nav-btn:hover::after,
+.action-btn:hover::after,
+.nav-btn:hover::after {
+  left: 100%;
+}
+
+/* Estados de focus para accesibilidad */
+.top-nav-btn:focus,
+.action-btn:focus,
+.nav-btn:focus {
+  outline: 2px solid var(--btn-border-hover);
+  outline-offset: 2px;
+}
+
+/* Estados deshabilitados */
+.top-nav-btn:disabled,
+.action-btn:disabled,
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.top-nav-btn:disabled:hover,
+.action-btn:disabled:hover,
+.nav-btn:disabled:hover {
+  transform: none !important;
+  box-shadow: var(--btn-shadow);
+}
  

@@ -222,14 +222,14 @@ const selectPokemon = (pokemon) => {
 
 <style scoped>
 .search-section {
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  overflow: hidden;
-  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  /* Altura mínima ajustada para evitar saltos de layout */
+  min-height: 250px;
 }
 
 .search-container {

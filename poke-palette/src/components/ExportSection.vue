@@ -266,8 +266,9 @@ const copyToClipboard = async (text) => {
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .export-header {
@@ -299,8 +300,13 @@ const copyToClipboard = async (text) => {
 
 .export-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .export-option {
@@ -533,69 +539,156 @@ const copyToClipboard = async (text) => {
   transform: translateX(100%);
 }
 
+/* Responsive Design System */
 @media (max-width: 1200px) {
   .export-options {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
   }
-}
-
-@media (max-width: 768px) {
+  
   .export-header {
     padding: 20px;
   }
   
-  .export-header-icon {
-    font-size: 2.5rem;
-  }
-  
   .export-header h3 {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
   }
   
   .export-description {
     font-size: 1rem;
   }
-  
-  .export-option-header {
-    flex-direction: column;
-    text-align: center;
+}
+
+@media (max-width: 768px) {
+  .export-section {
     gap: 16px;
-    padding: 20px;
   }
   
-  .export-icon {
-    width: 50px;
-    height: 50px;
+  .export-options {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .export-header {
+    padding: 16px;
+    margin-bottom: 8px;
+  }
+  
+  .export-header-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+  }
+  
+  .export-header h3 {
     font-size: 1.5rem;
+    margin-bottom: 8px;
   }
   
-  .export-icon svg {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .export-info h4 {
-    font-size: 1.2rem;
-  }
-  
-  .export-info p {
+  .export-description {
     font-size: 0.9rem;
   }
   
+  .export-option {
+    border-radius: 12px;
+  }
+  
+  .export-option-header {
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .export-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .export-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .export-info h4 {
+    font-size: 1.1rem;
+  }
+  
+  .export-info p {
+    font-size: 0.85rem;
+  }
+  
   .export-content {
-    padding: 20px;
+    padding: 16px;
   }
   
   .code-content {
     font-size: 0.8rem;
-    padding: 16px;
+    padding: 12px;
+    max-height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .export-section {
+    gap: 12px;
   }
   
-  .notification {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-    padding: 12px 16px;
+  .export-options {
+    gap: 12px;
+  }
+  
+  .export-header {
+    padding: 12px;
+  }
+  
+  .export-header-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+  
+  .export-header h3 {
+    font-size: 1.3rem;
+  }
+  
+  .export-description {
+    font-size: 0.85rem;
+  }
+  
+  .export-option {
+    border-radius: 10px;
+  }
+  
+  .export-option-header {
+    padding: 12px;
+    gap: 8px;
+  }
+  
+  .export-content {
+    padding: 12px;
+  }
+  
+  .code-content {
+    font-size: 0.75rem;
+    padding: 10px;
+    max-height: 200px;
+  }
+}
+
+/* Landscape Mode */
+@media (max-height: 500px) and (orientation: landscape) {
+  .export-section {
+    gap: 12px;
+  }
+  
+  .export-header {
+    padding: 12px;
+  }
+  
+  .export-options {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+  }
+  
+  .code-content {
+    max-height: 150px;
   }
 }
 </style> 

@@ -306,24 +306,26 @@ const restoreDefaultTheme = () => {
 .palette-container {
   background: var(--theme-tertiary);
   border-radius: 15px;
-  padding: 0;
+  padding: 24px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--theme-border);
-  max-height: calc(100vh - 200px);
-  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  gap: 24px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .palette-container h3 {
   color: var(--theme-quaternary);
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 20px 20px 0 20px;
 }
 
 .info-icon {
@@ -343,14 +345,13 @@ const restoreDefaultTheme = () => {
 
 .palette-display {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
-  max-height: calc(100vh - 400px);
-  overflow-y: auto;
-  padding: 0 20px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--theme-border) transparent;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  padding: 0 16px 16px;
 }
 
 .palette-display::-webkit-scrollbar {
@@ -371,17 +372,20 @@ const restoreDefaultTheme = () => {
 }
 
 .color-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px;
-  border-radius: 10px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 20px;
+  padding: 20px;
+  border-radius: 12px;
   background: var(--theme-quinary);
   transition: all 0.3s ease;
   border: 1px solid var(--theme-border);
   position: relative;
-  min-height: 80px;
+  min-height: 200px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .color-item:hover {
@@ -478,17 +482,24 @@ const restoreDefaultTheme = () => {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+  z-index: 2;
 }
 
 .color-picker {
-  width: 30px;
-  height: 20px;
+  width: 40px;
+  height: 28px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   background: none;
   padding: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.color-picker:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 2px;
 }
 
 .color-picker::-webkit-color-swatch-wrapper {
@@ -497,7 +508,7 @@ const restoreDefaultTheme = () => {
 
 .color-picker::-webkit-color-swatch {
   border: 1px solid var(--theme-border);
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 /* Contenedor de botones de acción */
@@ -508,49 +519,8 @@ const restoreDefaultTheme = () => {
   align-items: center;
 }
 
-.action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  background: linear-gradient(135deg, #f7fafc, #ffffff);
-  border: 1px solid var(--theme-border);
-  color: var(--theme-quaternary);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.action-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-  border-color: var(--theme-primary);
-}
-
-.action-btn.copy-btn:hover {
-  background: var(--theme-primary);
-  color: var(--theme-tertiary);
-}
-
-.action-btn.restore-btn {
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s ease;
-}
-
-.action-btn.restore-btn.visible {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.action-btn.restore-btn:hover {
-  background: var(--theme-secondary);
-  color: var(--theme-tertiary);
-}
+/* Los estilos de action-btn ahora están en shared.css */
+/* Eliminamos los estilos duplicados y conflictivos */
 
 /* Estilos específicos para cada tipo de botón */
 .copy-btn {
@@ -575,13 +545,6 @@ const restoreDefaultTheme = () => {
   color: white;
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.color-swatch {
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
-  border: 2px solid var(--theme-border);
 }
 
 .color-info {
@@ -683,158 +646,83 @@ const restoreDefaultTheme = () => {
   border-color: var(--theme-border-hover);
 }
 
+/* Responsive Design System */
+@media (max-width: 1200px) {
+  .palette-display {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  
+  .color-item {
+    padding: 16px;
+    gap: 16px;
+  }
+}
+
 @media (max-width: 768px) {
   .palette-container {
-    padding: 12px;
-    max-height: calc(100vh - 120px);
+    padding: 16px;
     border-radius: 12px;
+    gap: 16px;
   }
   
   .palette-container h3 {
     font-size: 1.1rem;
-    padding: 12px 0 16px 0;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
   
   .palette-display {
     grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 0 12px;
-    max-height: calc(100vh - 280px);
+    gap: 16px;
+    padding: 0 8px 12px;
   }
   
   .color-item {
-    flex-direction: column;
-    align-items: center;
+    grid-template-columns: 1fr;
+    justify-items: center;
     text-align: center;
-    gap: 12px;
-    min-height: 120px;
-    padding: 16px 12px;
+    gap: 16px;
+    padding: 20px;
   }
   
   .color-swatch-container {
+    display: flex;
     flex-direction: row;
-    gap: 8px;
-    align-items: center;
+    gap: 12px;
     justify-content: center;
-  }
-  
-  .color-swatch {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .color-swatch.original::after,
-  .color-swatch.current.has-changes::after {
-    font-size: 7px;
-    padding: 1px 4px;
-    top: -6px;
   }
   
   .color-info {
-    gap: 6px;
-    width: 100%;
-    max-width: 200px;
     text-align: center;
   }
   
-  .color-hex {
-    font-size: 1rem;
-    word-break: break-all;
-    overflow-wrap: break-word;
-  }
-  
-  .color-rgb {
-    font-size: 0.8rem;
-    word-break: break-all;
-    overflow-wrap: break-word;
-  }
-  
-  .color-percentage {
-    font-size: 0.9rem;
-  }
-  
   .color-actions {
-    margin-left: 0;
-    padding-left: 0;
+    display: flex;
     flex-direction: row;
-    gap: 8px;
-    justify-content: center;
-  }
-  
-  .action-btn {
-    width: 32px;
-    height: 32px;
-    font-size: 12px;
-  }
-  
-  .theme-buttons {
-    flex-direction: column;
     gap: 12px;
-    padding: 0 12px 16px 12px;
-  }
-  
-  .button-container {
-    width: 100%;
-  }
-  
-  .theme-btn {
-    width: 100%;
-    padding: 14px 16px;
-    font-size: 0.9rem;
-  }
-  
-  .palette-info {
-    margin: 16px 12px;
-    padding: 12px;
-  }
-  
-  .info-message {
-    font-size: 0.9rem;
-    flex-direction: column;
-    gap: 6px;
+    justify-content: center;
   }
 }
 
 @media (max-width: 480px) {
   .palette-container {
-    padding: 8px;
-    max-height: calc(100vh - 100px);
-  }
-  
-  .palette-container h3 {
-    font-size: 1rem;
-    padding: 8px 0 12px 0;
-    margin-bottom: 12px;
+    padding: 12px;
+    gap: 12px;
   }
   
   .palette-display {
-    gap: 8px;
-    padding: 0 8px;
-    max-height: calc(100vh - 240px);
+    gap: 12px;
+    padding: 0 6px 10px;
   }
   
   .color-item {
-    min-height: 100px;
-    padding: 12px 8px;
-    gap: 8px;
+    padding: 16px;
+    gap: 12px;
   }
   
   .color-swatch {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .color-swatch.original::after,
-  .color-swatch.current.has-changes::after {
-    font-size: 6px;
-    padding: 1px 3px;
-    top: -5px;
-  }
-  
-  .color-info {
-    max-width: 180px;
-    gap: 4px;
+    width: 40px;
+    height: 40px;
   }
   
   .color-hex {
@@ -842,7 +730,7 @@ const restoreDefaultTheme = () => {
   }
   
   .color-rgb {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
   }
   
   .color-percentage {
@@ -850,25 +738,30 @@ const restoreDefaultTheme = () => {
   }
   
   .action-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 10px;
-  }
-  
-  .theme-btn {
-    padding: 12px 14px;
-    font-size: 0.85rem;
-  }
-  
-  .palette-info {
-    margin: 12px 8px;
-    padding: 10px;
-  }
-  
-  .info-message {
-    font-size: 0.85rem;
+    width: 30px;
+    height: 30px;
   }
 }
+
+/* Landscape Mode */
+@media (max-height: 500px) and (orientation: landscape) {
+  .palette-container {
+    padding: 12px;
+  }
+  
+  .color-item {
+    grid-template-columns: auto 1fr auto;
+    min-height: 80px;
+    padding: 12px;
+  }
+  
+  .color-swatch {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+
 
 @media (max-width: 360px) {
   .palette-container {

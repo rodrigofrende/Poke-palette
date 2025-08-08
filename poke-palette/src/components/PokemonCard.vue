@@ -2,9 +2,9 @@
   <div class="selected-pokemon animate-in">
     <div class="pokemon-card animate-in">
       <!-- Close button -->
-      <button @click="$emit('close')" class="close-btn">
-        <span class="close-icon">×</span>
-      </button>
+                  <button @click="$emit('close')" class="close-btn" title="Cerrar">
+              <span class="close-icon">×</span>
+            </button>
       
       <div class="pokemon-header">
         <div class="pokemon-image-container">
@@ -49,9 +49,9 @@
           </div>
           
           <!-- Botón de análisis -->
-          <button @click="$emit('analyze')" class="analyze-btn-compact animate-in">
-            <span class="btn-icon-small">🎨</span>
-            Generar Paleta
+          <button @click="$emit('analyze')" class="action-btn primary animate-in">
+            <span class="btn-icon">🎨</span>
+            <span class="btn-text">Generar Paleta</span>
           </button>
         </div>
       </div>
@@ -497,6 +497,8 @@ const toggleCategory = (category) => {
   padding: 18px;
   min-height: 0;
   flex: 1;
+  /* Altura mínima ajustada para evitar saltos de layout */
+  min-height: 250px;
 }
 
 .pokemon-card {
@@ -514,6 +516,8 @@ const toggleCategory = (category) => {
   height: fit-content;
   min-height: 0;
   overflow: visible;
+  /* Altura mínima ajustada para mantener consistencia */
+  min-height: 200px;
 }
 
 .close-btn {
@@ -531,24 +535,28 @@ const toggleCategory = (category) => {
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 10;
+  color: var(--theme-quaternary);
 }
 
 .close-btn:hover {
   background: var(--theme-primary);
   color: var(--theme-tertiary);
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.close-icon {
-  font-size: 20px;
+.close-btn .close-icon {
+  font-size: 24px;
   font-weight: bold;
+  color: var(--theme-quaternary);
   line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  margin-top: -2px;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover .close-icon {
+  color: white;
+  transform: scale(1.1);
 }
 
 .pokemon-header {
@@ -674,56 +682,6 @@ const toggleCategory = (category) => {
 
 .toggle-input-compact:checked ~ .toggle-text-compact {
   color: var(--theme-primary);
-}
-
-.analyze-btn-compact {
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
-  color: var(--theme-tertiary);
-  border: 3px solid var(--theme-border);
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-  white-space: nowrap;
-  position: relative;
-  overflow: hidden;
-  min-width: 140px;
-  justify-content: center;
-}
-
-.analyze-btn-compact::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.6s ease;
-}
-
-.analyze-btn-compact:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  border-color: var(--theme-primary);
-}
-
-.analyze-btn-compact:hover::before {
-  left: 100%;
-}
-
-.analyze-btn-compact:active {
-  transform: translateY(-1px) scale(1.02);
-}
-
-.btn-icon-small {
-  font-size: 16px;
 }
 
 .pokemon-basic-info h3 {
@@ -1113,13 +1071,11 @@ const toggleCategory = (category) => {
     width: 100%;
   }
   
-  .analyze-btn-compact {
+  .action-btn.primary {
     padding: 16px 28px;
     font-size: 15px;
     min-width: 160px;
   }
-  
-
   
   .gallery-grid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -1151,13 +1107,11 @@ const toggleCategory = (category) => {
     margin-top: 10px;
   }
   
-  .analyze-btn-compact {
+  .action-btn.primary {
     padding: 12px 20px;
     font-size: 13px;
     min-width: 140px;
   }
-  
-
   
   .gallery-grid {
     grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
@@ -1226,7 +1180,7 @@ const toggleCategory = (category) => {
 }
 
 /* Animación específica para el botón Generar Paleta */
-.analyze-btn-compact.animate-in {
+.action-btn.primary.animate-in {
   animation: buttonSlideIn 0.7s ease-out 0.7s both;
 }
 

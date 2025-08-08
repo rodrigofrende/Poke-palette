@@ -37,37 +37,39 @@
         @clear-selection="clearSelection"
       />
       
-      <!-- Contenido principal -->
-      <!-- Paso 1: Búsqueda de Pokémon -->
-      <div v-if="currentStep === 1" class="step-content selection-step animate-in">
-        <PokemonSearchStep 
-          :is-shiny="isShiny"
-          :selected-pokemon="selectedPokemon"
-          @pokemon-selected="handlePokemonSelected"
-          @search-error="handleSearchError"
-          @update-shiny="updateShiny"
-          @analyze-pokemon="handleAnalyzeSelectedPokemon"
-        />
-      </div>
-      
-      <!-- Paso 2: Generar Paleta -->
-      <div v-if="currentStep === 2" class="step-content palette-step animate-in">
-        <PaletteGenerationStep 
-          :palette="palette"
-          :selected-pokemon="selectedPokemon"
-          @apply-theme="handleApplyTheme"
-          @restore-theme="handleRestoreTheme"
-          @update-palette="handleUpdatePalette"
-        />
-      </div>
-      
-      <!-- Paso 3: Análisis de Contraste -->
-      <div v-if="currentStep === 3" class="step-content analysis-step animate-in">
-        <ContrastAnalysisStep 
-          :contrast-analysis="contrastAnalysis"
-          :palette="palette"
-          :current-theme="currentTheme"
-        />
+      <!-- Contenido principal con margen para sidebar -->
+      <div class="content-wrapper">
+        <!-- Paso 1: Búsqueda de Pokémon -->
+        <div v-if="currentStep === 1" class="step-content selection-step animate-in">
+          <PokemonSearchStep 
+            :is-shiny="isShiny"
+            :selected-pokemon="selectedPokemon"
+            @pokemon-selected="handlePokemonSelected"
+            @search-error="handleSearchError"
+            @update-shiny="updateShiny"
+            @analyze-pokemon="handleAnalyzeSelectedPokemon"
+          />
+        </div>
+        
+        <!-- Paso 2: Generar Paleta -->
+        <div v-if="currentStep === 2" class="step-content palette-step animate-in">
+          <PaletteGenerationStep 
+            :palette="palette"
+            :selected-pokemon="selectedPokemon"
+            @apply-theme="handleApplyTheme"
+            @restore-theme="handleRestoreTheme"
+            @update-palette="handleUpdatePalette"
+          />
+        </div>
+        
+        <!-- Paso 3: Análisis de Contraste -->
+        <div v-if="currentStep === 3" class="step-content analysis-step animate-in">
+          <ContrastAnalysisStep 
+            :contrast-analysis="contrastAnalysis"
+            :palette="palette"
+            :current-theme="currentTheme"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -355,15 +357,15 @@ onUnmounted(() => {
 @import '../styles/shared.css';
 
 .pokemon-palette-analyzer {
-  border-radius: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 8px;
+  border-radius: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 32px);
+  height: 100vh;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--theme-quinary) 0%, var(--theme-tertiary) 100%);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 50%, var(--theme-tertiary) 100%);
 }
 
 .pokemon-palette-analyzer.welcome-mode {
@@ -383,7 +385,13 @@ onUnmounted(() => {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  gap: 12px;
+  gap: 0;
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
 }
 
 @keyframes fadeIn {
@@ -621,16 +629,105 @@ onUnmounted(() => {
 .step-content {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  padding: 12px;
   background: var(--theme-quinary);
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--theme-border);
   flex: 1;
   overflow: auto;
   min-height: 0;
-  height: 100%;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Layout con Sidebar - Sistema Responsive Completo */
+.content-wrapper {
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+  width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+/* Mobile First - Pantallas pequeñas */
+@media (max-width: 767px) {
+  .content-wrapper {
+    margin-left: 0;
+    padding: 16px;
+    padding-top: 100px; /* Espacio para el botón de toggle */
+    width: 100vw;
+    height: 100vh;
+    overflow-x: hidden;
+  }
+  
+  .step-content {
+    height: calc(100vh - 120px);
+    width: 100%;
+    max-width: 100%;
+    padding: 16px;
+    gap: 16px;
+  }
+}
+
+/* Tablet - Pantallas medianas */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .content-wrapper {
+    margin-left: 320px;
+    padding: 20px;
+    padding-top: 24px;
+    width: calc(100vw - 320px);
+    height: 100vh;
+  }
+  
+  .step-content {
+    height: calc(100vh - 60px);
+    width: 100%;
+    padding: 20px;
+    gap: 20px;
+  }
+}
+
+/* Desktop - Pantallas grandes */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .content-wrapper {
+    margin-left: 320px;
+    padding: 24px;
+    padding-top: 32px;
+    width: calc(100vw - 320px);
+    height: 100vh;
+  }
+  
+  .step-content {
+    height: calc(100vh - 80px);
+    width: 100%;
+    padding: 24px;
+    gap: 24px;
+  }
+}
+
+/* Large Desktop - Pantallas muy grandes */
+@media (min-width: 1440px) {
+  .content-wrapper {
+    margin-left: 320px;
+    padding: 32px;
+    padding-top: 40px;
+    width: calc(100vw - 320px);
+    height: 100vh;
+  }
+  
+  .step-content {
+    height: calc(100vh - 100px);
+    width: 100%;
+    padding: 32px;
+    gap: 32px;
+  }
 }
 
 /* Estilos para la información del step actual en el header */
@@ -1010,6 +1107,109 @@ onUnmounted(() => {
     width: 12px;
     height: 12px;
     font-size: 6px;
+  }
+}
+
+/* Step-specific styles for better layout */
+.selection-step {
+  width: 100%;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.palette-step {
+  width: 100%;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.analysis-step {
+  width: 100%;
+  min-height: 550px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* Improve content distribution */
+.step-content > * {
+  width: 100%;
+  flex: 1;
+}
+
+/* Better spacing for content sections */
+.step-content > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Mobile específico - Pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .content-wrapper {
+    padding: 12px;
+    padding-top: 90px;
+  }
+  
+  .step-content {
+    padding: 12px;
+    gap: 12px;
+    border-radius: 12px;
+  }
+  
+  .selection-step,
+  .palette-step,
+  .analysis-step {
+    min-height: 400px;
+  }
+}
+
+/* Landscape mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+  .content-wrapper {
+    padding-top: 80px;
+  }
+  
+  .step-content {
+    height: calc(100vh - 100px);
+  }
+}
+
+/* Pantallas muy altas */
+@media (min-height: 1200px) {
+  .step-content {
+    max-height: 1000px;
+  }
+}
+
+/* Pantallas muy anchas */
+@media (min-width: 1920px) {
+  .content-wrapper {
+    max-width: 1600px;
+    margin: 0 auto;
+    margin-left: 320px;
+  }
+  
+  .step-content {
+    max-width: 1200px;
+  }
+}
+
+/* Asegurar que el contenido no se desborde */
+.step-content {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Mejorar el scroll en mobile */
+@media (max-width: 767px) {
+  .step-content {
+    -webkit-overflow-scrolling: touch;
   }
 }
 </style>

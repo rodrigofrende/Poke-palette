@@ -3,7 +3,10 @@
     class="type-badge"
     :style="{ background: getTypeColor(type).bg, color: getTypeColor(type).text }"
   >
-    {{ getTypeName(type) }}
+    <!-- Icono para mobile -->
+    <span class="type-icon">{{ getTypeIcon(type) }}</span>
+    <!-- Texto para desktop -->
+    <span class="type-text">{{ getTypeName(type) }}</span>
   </span>
 </template>
 
@@ -64,6 +67,30 @@ const getTypeName = (type) => {
   }
   return typeNames[type] || type
 }
+
+const getTypeIcon = (type) => {
+  const typeIcons = {
+    normal: '⚪',
+    fire: '🔥',
+    water: '💧',
+    electric: '⚡',
+    grass: '🌿',
+    ice: '❄️',
+    fighting: '👊',
+    poison: '☠️',
+    ground: '🌍',
+    flying: '🦅',
+    psychic: '🔮',
+    bug: '🐛',
+    rock: '🪨',
+    ghost: '👻',
+    dragon: '🐉',
+    dark: '🌑',
+    steel: '⚙️',
+    fairy: '🧚'
+  }
+  return typeIcons[type] || '❓'
+}
 </script>
 
 <style scoped>
@@ -78,6 +105,9 @@ const getTypeName = (type) => {
   position: relative;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .type-badge:hover {
@@ -99,5 +129,44 @@ const getTypeName = (type) => {
 
 .type-badge:hover::before {
   left: 100%;
+}
+
+.type-icon {
+  font-size: 1.1em;
+  display: none; /* Oculto por defecto en desktop */
+}
+
+.type-text {
+  display: inline; /* Visible por defecto en desktop */
+}
+
+/* Mobile styles - mostrar solo icono */
+@media (max-width: 768px) {
+  .type-badge {
+    padding: 8px 10px;
+    min-width: 40px;
+    justify-content: center;
+  }
+  
+  .type-icon {
+    display: inline;
+    font-size: 1.2em;
+  }
+  
+  .type-text {
+    display: none;
+  }
+}
+
+/* Pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .type-badge {
+    padding: 6px 8px;
+    min-width: 36px;
+  }
+  
+  .type-icon {
+    font-size: 1.1em;
+  }
 }
 </style> 

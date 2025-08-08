@@ -166,14 +166,15 @@ const analyzeSelectedPokemon = () => {
 
 .search-container {
   width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
   transition: all 0.3s ease;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 15px;
+  gap: 20px;
+  box-sizing: border-box;
+  /* Altura mínima ajustada para evitar saltos de layout */
+  min-height: 250px;
 }
 
 .loading-overlay {
@@ -195,6 +196,8 @@ const analyzeSelectedPokemon = () => {
 @media (max-width: 768px) {
   .search-container {
     padding: 0 10px;
+    /* Altura mínima ajustada para mobile */
+    min-height: 200px;
   }
 }
 </style> 
